@@ -1,0 +1,10 @@
+*figs*
+*logs*
+*data*
+*__pycache__/
+*.py[cod]
+*$py.class
+*.DS_Store
+*classic_control_copy
+gym_patch
+*videos/
