@@ -6,7 +6,8 @@
 # python ant_collect_sac.py --env="Ant-v2" --exp_name=_discretize_autoencoder_6 --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=30 --autoencode --autoencoder_reduce_dim=6
 
 import sys
-sys.path.append('/home/abby')
+sys.path.append('/home/abbyvs')
+sys.path.append('/home/abbyvs/spinningup')
 
 import os
 import time
@@ -21,6 +22,7 @@ from scipy.stats import norm
 from tabulate import tabulate
 
 import gym
+from gym import wrappers
 import tensorflow as tf
 
 import utils
@@ -64,8 +66,11 @@ def collect_avg_obs(env, policies, T, n=100):
     
     return data
 
-def get_state(env, obs):
-    state = env.env.state_vector()
+def get_state(env, obs, wrapped=False):
+    if wrapped:
+        state = env.unwrapped.state_vector()
+    else:
+        state = env.env.state_vector()
     if not np.array_equal(obs[:len(state) - 2], state[2:]):
         utils.log_statement(obs)
         utils.log_statement(state)
@@ -119,107 +124,106 @@ def compute_states_visited_xy(env, policies, T, n, N=20, initial_state=[], basel
     states_visited_xy /= float(N)
     return states_visited_xy
 
+def select_action(policies, env, obs):
+    
+    # select random policy uniform distribution
+    # take non-deterministic action for that policy
+    idx = random.randint(0, len(policies) - 1)
+    if idx == 0:
+        action = env.action_space.sample()
+    else:
+        action = policies[idx].get_action(obs, deterministic=args.deterministic)
+    
+    return action
+
+def execute_one_rollout(policies, env, start_obs, T, data, norm, wrapped=False):
+    obs = start_obs
+    
+    p, p_xy, cumulative_states_visited, states_visited, \
+    cumulative_states_visited_xy, states_visited_xy, random_initial_state = data
+    
+    random_T = np.random.randint(0, T)
+    
+    for t in range(T):
+            
+        action = select_action(policies, env, obs)
+        
+        # Count the cumulative number of new states visited as a function of t.
+        obs, _, done, _ = env.step(action)
+        obs = get_state(env, obs, wrapped)
+
+        # if this is the first time you are seeing this state, increment.
+        if p[tuple(ant_utils.discretize_state(obs, norm, env))] == 0:
+            cumulative_states_visited += 1
+        states_visited.append(cumulative_states_visited)
+        if p_xy[tuple(ant_utils.discretize_state_2d(obs, norm, env))]  == 0:
+            cumulative_states_visited_xy += 1
+        states_visited_xy.append(cumulative_states_visited_xy)
+
+        p[tuple(ant_utils.discretize_state(obs, norm, env))] += 1
+        p_xy[tuple(ant_utils.discretize_state_2d(obs, norm, env))] += 1
+
+        if t == random_T:
+            random_initial_state = obs
+
+        if done: # CRITICAL: ignore done signal
+            done = False
+        
+    data = (p, p_xy, cumulative_states_visited, states_visited, \
+    cumulative_states_visited_xy, states_visited_xy, random_initial_state)
+    
+    return data
+                
 # run a simulation to see how the average policy behaves.
 def execute_average_policy(env, policies, T,
                            reward_fn=[], norm=[], initial_state=[], 
-                           n=10, render=False, epoch=0):
+                           n=10, render=False, video_dir='', epoch=0):
     
     p = np.zeros(shape=(tuple(ant_utils.num_states)))
     p_xy = np.zeros(shape=(tuple(ant_utils.num_states_2d)))
-    random_initial_state = []
-    
-    discretized = []
-    
+        
     cumulative_states_visited = 0
     states_visited = []
     cumulative_states_visited_xy = 0
     states_visited_xy = []
     
-    rewards = np.zeros(T)
+    random_initial_state = []
     
-    denom = 0
-    max_idx = len(policies) - 1
+    data = (p, p_xy, cumulative_states_visited, states_visited, 
+            cumulative_states_visited_xy, states_visited_xy, 
+            random_initial_state)
+    
+    if len(initial_state) == 0:
+        env.reset()
+        initial_state = env.env.state_vector()
 
     # average results over n rollouts
     for iteration in range(n):
         
         env.reset()
-        
-        # TODO: when testing, do not want initial state.
-        if len(initial_state) > 0:
+         
+        # onyl get a recording of first iteration
+        if render and iteration == 0:
+            print('recording mixed iteration....')
+            wrapped_env = wrappers.Monitor(env, video_dir)
+            wrapped_env.reset()
             qpos = initial_state[:len(ant_utils.qpos)]
             qvel = initial_state[len(ant_utils.qpos):]
-            env.env.set_state(qpos, qvel)
-
-        obs = get_state(env, env.env._get_obs())
-
-        random_T = np.floor(random.random()*T)
-        random_initial_state = []
-       
-        for t in range(T):
-            
-            action = np.zeros(shape=(1,ant_utils.action_dim))
-            
-            if args.max_sigma:
-                mu = np.zeros(shape=(1,ant_utils.action_dim))
-                sigma = np.zeros(shape=(1,ant_utils.action_dim))
-                mean_sigma = np.zeros(shape=(1,ant_utils.action_dim))
-                for sac in policies:
-                    mu += sac.get_action(obs, deterministic=True)
-                    sigma = np.maximum(sigma, sac.get_sigma(obs))
-                    mean_sigma += sac.get_sigma(obs)
-                mu /= float(len(policies))
-                mean_sigma /= float(len(policies))
-
-                action = np.random.normal(loc=mu, scale=sigma)
-            else:
-                # select random policy uniform distribution
-                # take non-deterministic action for that policy
-                idx = random.randint(0, max_idx)
-                if idx ==0:
-                    action = env.action_space.sample()
-                else:
-                    action = policies[idx].get_action(obs, deterministic=args.deterministic)
-                
-            # Count the cumulative number of new states visited as a function of t.
-            obs, _, done, _ = env.step(action)
-            obs = get_state(env, obs)
-            
-            # TODO: collect all discretized obs. compute histogram for
-            # each axis of the obs.
-            discretized_obs = ant_utils.discretize_state(obs, norm, env)
-            discretized.append(discretized_obs)
-            
-            reward = reward_fn[tuple(discretized_obs)]
-            rewards[t] += reward
-
-            # if this is the first time you are seeing this state, increment.
-            if p[tuple(ant_utils.discretize_state(obs, norm, env))] == 0:
-                cumulative_states_visited += 1
-            states_visited.append(cumulative_states_visited)
-            if p_xy[tuple(ant_utils.discretize_state_2d(obs, norm, env))]  == 0:
-                cumulative_states_visited_xy += 1
-            states_visited_xy.append(cumulative_states_visited_xy)
-
-            p[tuple(ant_utils.discretize_state(obs, norm, env))] += 1
-            p_xy[tuple(ant_utils.discretize_state_2d(obs, norm, env))] += 1
-            denom += 1
-            
-            if t == random_T:
-                random_initial_state = obs
-
-            if render:
-                env.render()
-            if done: # CRITICAL: ignore done signal
-                done = False
-            
+            wrapped_env.unwrapped.set_state(qpos, qvel)
+            obs = get_state(wrapped_env, wrapped_env.unwrapped._get_obs(), wrapped=True)
+            data = execute_one_rollout(policies, wrapped_env, obs, T, data, norm, wrapped=True)
+        else:
+            obs = get_state(env, env.env._get_obs())
+            data = execute_one_rollout(policies, env, obs, T, data, norm)
+    
     env.close()
-    rewards /= float(n)
-    plotting.reward_vs_t(rewards, epoch)
-    plotting.discretized_histograms(discretized, epoch)
-
-    p /= float(denom)
-    p_xy /= float(denom)
+    
+    # expand saved data
+    p, p_xy, cumulative_states_visited, states_visited, \
+    cumulative_states_visited_xy, states_visited_xy, random_initial_state = data
+    
+    p /= float(T*n)
+    p_xy /= float(T*n)
 
     return p, p_xy, random_initial_state, states_visited, states_visited_xy
 
@@ -328,17 +332,12 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
 
         # Learn policy that maximizes current reward function.
         print("Learning new oracle...")
-        if args.seed != -1:
-            seed = args.seed
-        else:
-            seed = random.randint(1, 100000)
-        
+        seed = random.randint(1, 100000)
         sac = AntSoftActorCritic(lambda : gym.make(args.env), reward_fn=reward_fn, xid=i+1,
             seed=seed, gamma=args.gamma, 
             ac_kwargs=dict(hidden_sizes=[args.hid]*args.l),
             logger_kwargs=logger_kwargs, 
-            normalization_factors=normalization_factors,
-            learn_reduced=args.learn_reduced)
+            normalization_factors=normalization_factors)
         # The first policy is random
         if i == 0:
             sac.soft_actor_critic(epochs=0) 
@@ -348,8 +347,11 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
                               start_steps=args.start_steps) 
         policies.append(sac)
 
+        epoch = 'epoch_%02d' % (i) 
         if args.render:
-            epoch = 'epoch_%02d' % (i) 
+#             sac.record_long(T=2000, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
+#             sac.record_long(T=2000, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
+            
             sac.record(T=1000, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
             sac.record(T=1000, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
         
@@ -366,7 +368,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
             execute_average_policy(env, policies, T,
                                    reward_fn=reward_fn, norm=normalization_factors, 
                                    initial_state=initial_state, n=args.n, 
-                                   render=False, epoch=i)
+                                   render=args.render, video_dir=video_dir+'/mixed/'+epoch, epoch=i)
         
         print("Calculating maxEnt entropy...")
         round_entropy = entropy(average_p.ravel())

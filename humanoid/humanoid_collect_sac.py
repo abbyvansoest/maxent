@@ -3,7 +3,7 @@
 # python humanoid_collect_sac.py --env="Humanoid-v2" --exp_name=test --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=16 --gaussian --reduce_dim=5
 
 import sys
-sys.path.append('/home/abby')
+sys.path.append('/home/abbyvs')
 
 import os
 import time
@@ -16,6 +16,7 @@ from scipy.interpolate import spline
 from tabulate import tabulate
 
 import gym
+from gym import wrappers
 import tensorflow as tf
 
 import utils
@@ -28,24 +29,52 @@ args = utils.get_args()
 
 from spinup.utils.run_utils import setup_logger_kwargs
 
-def get_state(env, obs):
-    state = env.env.state_vector()
-    if not np.array_equal(obs[:len(state) - 2], state[2:]):
-        utils.log_statement(obs)
-        utils.log_statement(state)
-        raise ValueError("state and observation are not equal")
-    return state
+def select_action(policies, env, obs):
+    idx = random.randint(0, len(policies) - 1)
+    if idx == 0:
+        action = env.action_space.sample()
+    else:
+        action = policies[idx].get_action(obs, deterministic=args.deterministic)
+    return action
 
-# run a simulation to see how the average policy behaves.
-def execute_average_policy(env, policies, T, initial_state=[], n=10, render=False, epoch=0):
+def execute_one_rollout(policies, env, obs, T, data, wrapped=False):
+
+    state_data, p_xy, random_initial_state = data
+    random_T = np.floor(random.random()*T)
+
+    for t in range(T):
+
+        if t % 1000 == 0:
+            print(t)
+
+        action = select_action(policies, env, obs)
+        
+        # Count the cumulative number of new states visited as a function of t.
+        obs, _, done, _ = env.step(action)
+        obs = humanoid_utils.get_state(env, obs, wrapped)
+        state_data.append(obs)
+
+        p_xy[tuple(humanoid_utils.discretize_state_2d(obs, env))] += 1
+
+        if t == random_T:
+            random_initial_state = obs
+
+        if done: # CRITICAL: ignore done signal
+            done = False
+            if wrapped:
+                env.reset()
     
+    data = (state_data, p_xy, random_initial_state)
+    return data
+                
+# run a simulation to see how the average policy behaves.
+def execute_average_policy(env, policies, T, initial_state=[], n=10, render=False, video_dir='', epoch=0):
+       
+    state_data = []
     random_initial_state = []
     p_xy = np.zeros(shape=(tuple(humanoid_utils.num_states_2d)))
     
-    denom = 0
-    max_idx = len(policies) - 1
-
-    data = []
+    data = (state_data, p_xy, random_initial_state)
 
     # average results over n rollouts
     for iteration in range(n):
@@ -53,42 +82,31 @@ def execute_average_policy(env, policies, T, initial_state=[], n=10, render=Fals
         print('---- ' + str(iteration)+ ' ----')
         
         env.reset()
-        obs = get_state(env, env.env._get_obs())
-        random_T = np.floor(random.random()*T)
-        random_initial_state = []
-       
-        for t in range(T):
-
-            if t % 1000 == 0:
-                print(t)
-            
-            # action = np.zeros(shape=(1,humanoid_utils.action_dim))
-            idx = random.randint(0, max_idx)
-            if idx == 0:
-                action = env.action_space.sample()
-            else:
-                action = policies[idx].get_action(obs, deterministic=args.deterministic)
-                
-            # Count the cumulative number of new states visited as a function of t.
-            obs, _, done, _ = env.step(action)
-            obs = get_state(env, obs)
-            data.append(obs)
-            
-            p_xy[tuple(humanoid_utils.discretize_state_2d(obs, env))] += 1
-            denom += 1
-            
-            if t == random_T:
-                random_initial_state = obs
-
-            if render:
-                env.render()
-            if done: # CRITICAL: ignore done signal
-                done = False
+        
+        if len(initial_state) == 0:
+            env.reset()
+            initial_state = env.env.state_vector()
+                 
+        # only get a recording of first iteration
+        if render and iteration == 0:
+            print('recording mixed iteration....')
+            wrapped_env = wrappers.Monitor(env, video_dir)
+            wrapped_env.reset()
+            qpos = initial_state[:len(humanoid_utils.qpos)]
+            qvel = initial_state[len(humanoid_utils.qpos):]
+            wrapped_env.unwrapped.set_state(qpos, qvel)
+            obs = humanoid_utils.get_state(wrapped_env, wrapped_env.unwrapped._get_obs(), wrapped=True)
+            data = execute_one_rollout(policies, wrapped_env, obs, T=1000, data=data, wrapped=True)
+        else:
+            obs = humanoid_utils.get_state(env, env.env._get_obs())
+            data = execute_one_rollout(policies, env, obs, T, data)
             
     env.close()
-    p_xy /= float(denom)
+    
+    state_data, p_xy, random_initial_state = data
+    p_xy /= float(T*n)
 
-    return data, p_xy, random_initial_state
+    return state_data, p_xy, random_initial_state
 
 def entropy(pt):
     utils.log_statement("pt size %d" % pt.size)
@@ -106,6 +124,8 @@ def entropy(pt):
 # and learn T policies using policy gradients and a reward function 
 # based on entropy.
 def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
+    
+    video_dir = 'videos/' + args.exp_name
     
     direct = os.getcwd()+ '/data/'
     experiment_directory = direct + args.exp_name
@@ -164,18 +184,23 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
                                   initial_state=initial_state, 
                                   start_steps=args.start_steps) 
         policies.append(sac)
+        
+        epoch = 'epoch_%02d' % (i)
+        if args.render:
+            print('Collecting videos....') 
+            sac.record(T=1000, n=1, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
+            sac.record(T=1000, n=1, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
 
         # Execute the cumulative average policy thus far.
         # Estimate distribution and entropy.
         print("Executing mixed policy...")
         data, average_p_xy, initial_state = execute_average_policy(env, policies, T,
-                                       initial_state=initial_state, n=args.n, 
-                                       render=False, epoch=i)
-        test_data,_,_= execute_average_policy(env, policies, T=1000, n=3)
-
-        np.save("data/test_data_"+args.exp_name, test_data)
-        np.save("data/data_"+args.exp_name, data)
-            
+                                           initial_state=initial_state, n=args.n, 
+                                           render=args.render, video_dir=video_dir+'/mixed/'+epoch, epoch=i)
+        test_data,_,_ = execute_average_policy(env, policies, T=2000,
+                                               initial_state=initial_state, n=1, 
+                                               render=False, epoch=i)
+        
         print("Calculating maxEnt entropy...")
         round_entropy_xy = entropy(average_p_xy.ravel())
         

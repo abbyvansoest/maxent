@@ -2,7 +2,7 @@ import numpy as np
 
 from sklearn.datasets import load_digits
 from sklearn.neighbors import KernelDensity
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA 
 from sklearn.model_selection import GridSearchCV
 
 import time

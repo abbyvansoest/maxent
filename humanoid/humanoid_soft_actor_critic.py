@@ -1,22 +1,19 @@
 # Code derived from: https://spinningup.openai.com/en/latest/algorithms/sac.html
+import sys
+sys.path.append('/home/abbyvs')
+sys.path.append('/home/abbyvs/spinningup')
 
 import numpy as np
 import tensorflow as tf
 import gym
+from gym import wrappers
+
 import time
 import core
 from core import get_vars
 from spinup.utils.logx import EpochLogger
 
 import humanoid_utils
-
-def get_state(env, obs):
-    state = env.env.state_vector()
-    if not np.array_equal(obs[:len(state) - 2], state[2:]):
-        print(obs)
-        print(state)
-        raise ValueError("state and observation are not equal")
-    return state
 
 class ReplayBuffer:
     """
@@ -175,12 +172,12 @@ class HumanoidSoftActorCritic:
                 self.test_env.env.set_state(qpos, qvel)
                 o = self.test_env.env._get_obs()
             
-            o = get_state(self.test_env, o)
+            o = humanoid_utils.get_state(self.test_env, o)
             while not(d or (ep_len == T)):
                 # Take deterministic actions at test time 
                 a = self.get_action(o, deterministic)
                 o, r, d, _ = self.test_env.step(a)
-                o = get_state(self.test_env, o)
+                o = humanoid_utils.get_state(self.test_env, o)
 
                 r = self.reward(self.test_env, r, o)
                 ep_ret += r
@@ -205,11 +202,11 @@ class HumanoidSoftActorCritic:
         for j in range(n):
             print(j)
             o, r, d, ep_ret, ep_len = self.test_env.reset(), 0, False, 0, 0
-            o = get_state(self.test_env, o)
+            o = humanoid_utils.get_state(self.test_env, o)
             while not(d or (ep_len == T)):
                 a = self.test_env.action_space.sample()
                 o, r, d, _ = self.test_env.step(a)
-                o = get_state(self.test_env, o)
+                o = humanoid_utils.get_state(self.test_env, o)
                 r = self.reward(self.test_env, r, o)
                 
                 # if this is the first time you are seeing this state, increment.
@@ -228,6 +225,39 @@ class HumanoidSoftActorCritic:
         p_xy /= float(denom)
         
         return p_xy, states_visited_xy_baseline
+
+    # record film of policy
+    def record(self, T, n=1, video_dir='', on_policy=False, deterministic=False):
+        print("rendering env in record()")
+        
+        # TODO: set width and height.
+        
+        for i in range(n):
+            self.test_env.reset()
+            wrapped_env = wrappers.Monitor(self.test_env, video_dir + '_%d'%(i))
+            o = wrapped_env.reset()
+
+            t = 0
+            d = False
+            while t < T and not d:
+                o = wrapped_env.unwrapped.state_vector()
+                if on_policy:
+                    a = self.get_action(o, deterministic)
+                else:
+                    a = wrapped_env.unwrapped.action_space.sample()
+                o2, r, d, _ = wrapped_env.step(a)
+                if d:
+                    print(t)
+                    wrapped_env.reset()
+                    d = False
+                if np.all(np.isclose(o, wrapped_env.unwrapped.state_vector())):
+                    print('close!')
+
+                wrapped_env.unwrapped.render(mode='rgb_array', width=1000, height=1000)
+                o = o2
+                t = t + 1
+            wrapped_env.close()
+            print('total steps in video: %d' % t)
 
     def soft_actor_critic(self, initial_state=[], steps_per_epoch=5000, epochs=100,
             batch_size=100, start_steps=10000, save_freq=1):
@@ -252,7 +282,7 @@ class HumanoidSoftActorCritic:
                 self.env.env.set_state(qpos, qvel)
                 o = self.env.env._get_obs()
             
-            o = get_state(self.env, o)
+            o = humanoid_utils.get_state(self.env, o)
 
             total_steps = steps_per_epoch * epochs
 
@@ -273,7 +303,7 @@ class HumanoidSoftActorCritic:
 
                 # Step the env
                 o2, r, d, _ = self.env.step(a)
-                o2 = get_state(self.env, o2)
+                o2 = humanoid_utils.get_state(self.env, o2)
                 r = self.reward(self.env, r, o2)
                 
                 ep_ret += r
@@ -317,7 +347,7 @@ class HumanoidSoftActorCritic:
                         qvel = initial_state[len(humanoid_utils.qpos):]
                         self.env.env.set_state(qpos, qvel)
                         o = self.env.env._get_obs()
-                    o = get_state(self.env, o)
+                    o = humanoid_utils.get_state(self.env, o)
 
                 # End of epoch wrap-up
                 if t > 0 and t % steps_per_epoch == 0:

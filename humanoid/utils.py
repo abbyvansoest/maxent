@@ -13,9 +13,9 @@ parser.add_argument('--lr', type=float, default=1e-3, metavar='lr',
                     help='learning rate')
 parser.add_argument('--eps', type=float, default=0.05, metavar='eps',
                     help='exploration rate')
-parser.add_argument('--episodes', type=int, default=20, metavar='ep',
+parser.add_argument('--episodes', type=int, default=15, metavar='ep',
                     help='number of episodes per agent')
-parser.add_argument('--epochs', type=int, default=50, metavar='epo',
+parser.add_argument('--epochs', type=int, default=15, metavar='epo',
                     help='number of models to train on entropy rewards')
 parser.add_argument('--T', type=int, default=10000, metavar='T',
                     help='number of steps to roll out entropy policy')
