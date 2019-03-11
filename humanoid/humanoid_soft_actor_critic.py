@@ -183,7 +183,8 @@ class HumanoidSoftActorCritic:
                 ep_ret += r
                 ep_len += 1
                 denom += 1
-                
+               
+            # TODO(abbyvs): CHANGE HERE?
                 if d:
                     d = False
 
@@ -229,9 +230,7 @@ class HumanoidSoftActorCritic:
     # record film of policy
     def record(self, T, n=1, video_dir='', on_policy=False, deterministic=False):
         print("rendering env in record()")
-        
-        # TODO: set width and height.
-        
+                
         for i in range(n):
             self.test_env.reset()
             wrapped_env = wrappers.Monitor(self.test_env, video_dir + '_%d'%(i))
@@ -245,16 +244,17 @@ class HumanoidSoftActorCritic:
                     a = self.get_action(o, deterministic)
                 else:
                     a = wrapped_env.unwrapped.action_space.sample()
-                o2, r, d, _ = wrapped_env.step(a)
+                o, r, d, _ = wrapped_env.step(a)
+                o = wrapped_env.unwrapped.state_vector()
                 if d:
                     print(t)
                     wrapped_env.reset()
+                    qpos = o[:len(humanoid_utils.qpos)]
+                    qvel = o[len(humanoid_utils.qpos):]
+                    wrapped_env.unwrapped.set_state(qpos, qvel)
                     d = False
-                if np.all(np.isclose(o, wrapped_env.unwrapped.state_vector())):
-                    print('close!')
 
                 wrapped_env.unwrapped.render(mode='rgb_array', width=1000, height=1000)
-                o = o2
                 t = t + 1
             wrapped_env.close()
             print('total steps in video: %d' % t)

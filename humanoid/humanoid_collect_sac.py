@@ -42,8 +42,10 @@ def execute_one_rollout(policies, env, obs, T, data, wrapped=False):
     state_data, p_xy, random_initial_state = data
     random_T = np.floor(random.random()*T)
 
-    for t in range(T):
-
+    done = False
+    t = 0
+    while (t < T) and not done:
+        t = t + 1
         if t % 1000 == 0:
             print(t)
 
@@ -55,15 +57,21 @@ def execute_one_rollout(policies, env, obs, T, data, wrapped=False):
         state_data.append(obs)
 
         p_xy[tuple(humanoid_utils.discretize_state_2d(obs, env))] += 1
-
         if t == random_T:
             random_initial_state = obs
 
         if done: # CRITICAL: ignore done signal
             done = False
             if wrapped:
+                print(t)
                 env.reset()
-    
+                qpos = obs[:len(humanoid_utils.qpos)]
+                qvel = obs[len(humanoid_utils.qpos):]
+                env.unwrapped.set_state(qpos, qvel)
+                d = False
+
+    print("total rollout steps: %d" % t)
+    p_xy /= float(t)
     data = (state_data, p_xy, random_initial_state)
     return data
                 
@@ -96,7 +104,7 @@ def execute_average_policy(env, policies, T, initial_state=[], n=10, render=Fals
             qvel = initial_state[len(humanoid_utils.qpos):]
             wrapped_env.unwrapped.set_state(qpos, qvel)
             obs = humanoid_utils.get_state(wrapped_env, wrapped_env.unwrapped._get_obs(), wrapped=True)
-            data = execute_one_rollout(policies, wrapped_env, obs, T=1000, data=data, wrapped=True)
+            data = execute_one_rollout(policies, wrapped_env, obs, T=args.record_steps, data=data, wrapped=True)
         else:
             obs = humanoid_utils.get_state(env, env.env._get_obs())
             data = execute_one_rollout(policies, env, obs, T, data)
@@ -104,7 +112,7 @@ def execute_average_policy(env, policies, T, initial_state=[], n=10, render=Fals
     env.close()
     
     state_data, p_xy, random_initial_state = data
-    p_xy /= float(T*n)
+    print('Sum = %f' % (np.sum(p_xy)))
 
     return state_data, p_xy, random_initial_state
 
@@ -188,8 +196,8 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         epoch = 'epoch_%02d' % (i)
         if args.render:
             print('Collecting videos....') 
-            sac.record(T=1000, n=1, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
-            sac.record(T=1000, n=1, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
+            sac.record(T=args.record_steps, n=1, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
+            sac.record(T=args.record_steps, n=1, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
 
         # Execute the cumulative average policy thus far.
         # Estimate distribution and entropy.

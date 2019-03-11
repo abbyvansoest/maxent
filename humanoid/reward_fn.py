@@ -20,19 +20,7 @@ class RewardFn:
             self.kde = self.fit_distribution(data)
 
     def fit_distribution(self, data):
-        print(data.shape)
-
-        # # use grid search cross-validation to optimize the bandwidth
-        # params = {'bandwidth': np.logspace(-2, 0, 2)}
-        # grid = GridSearchCV(KernelDensity(kernel='epanechnikov'), params, cv=5)
-        # grid.fit(data)
-
-        # print("best bandwidth: {0}".format(grid.best_estimator_.bandwidth))
-
-        # # use the best estimator to compute the kernel density estimate
-        # return grid.best_estimator_
-        
-        kde = KernelDensity(bandwidth=.4, kernel='epanechnikov').fit(data)
+        kde = KernelDensity(bandwidth=.1, kernel='epanechnikov').fit(data)
         return kde
 
     def get_prob(self, x):

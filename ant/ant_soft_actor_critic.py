@@ -252,52 +252,13 @@ class AntSoftActorCritic:
         
         return p, p_xy, states_visited_baseline, states_visited_xy_baseline
 
-
-    # record xtra long film of policy
-    def record_long(self, T, video_dir='', on_policy=False, deterministic=False):
-        print("rendering env in record_long()")
-
-        self.test_env.reset()
-        wrapped_env = wrappers.Monitor(self.test_env, video_dir + '_long')
-        o = wrapped_env.reset()
-
-        for t in range(T):
-            o = wrapped_env.unwrapped.state_vector()
-            if on_policy:
-                a = self.get_action(o, deterministic)
-            else:
-                a = wrapped_env.unwrapped.action_space.sample()
-            o2, r, d, _ = wrapped_env.step(a)
-#             print(t)
-#             if np.all(np.isclose(o, wrapped_env.unwrapped.state_vector()))
-            
-#                 print('close!')
-            if d:
-                print('reset!')
-                o = wrapped_env.unwrapped.state_vector()
-                qpos = np.array(wrapped_env.unwrapped.sim.data.qpos.flat)
-                qvel = np.array(wrapped_env.unwrapped.sim.data.qvel.flat)
-                
-                print(o)
-                print(qpos, qvel)
-                
-                # need to reset environemnt and then make sure state is the same
-                wrapped_env.reset()
-                wrapped_env.unwrapped.set_state(qpos, qvel)
-
-            wrapped_env.unwrapped.render(mode='rgb_array')
-
-            o = o2
-            t = t + 1
-        wrapped_env.close()
-            
     # record film of policy
-    def record(self, T, video_dir='', on_policy=False, deterministic=False):
+    def record(self, T, n, video_dir='', on_policy=False, deterministic=False):
         print("rendering env in record()")
         
         # TODO: set width and height.
         
-        for i in range(2):
+        for i in range(n):
             self.test_env.reset()
             wrapped_env = wrappers.Monitor(self.test_env, video_dir + '_%d'%(i))
             o = wrapped_env.reset()

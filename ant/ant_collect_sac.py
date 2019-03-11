@@ -168,6 +168,9 @@ def execute_one_rollout(policies, env, start_obs, T, data, norm, wrapped=False):
 
         if done: # CRITICAL: ignore done signal
             done = False
+            if wrapped:
+                obs = env.reset()
+                obs = get_state(env, obs, wrapped)
         
     data = (p, p_xy, cumulative_states_visited, states_visited, \
     cumulative_states_visited_xy, states_visited_xy, random_initial_state)
@@ -211,7 +214,7 @@ def execute_average_policy(env, policies, T,
             qvel = initial_state[len(ant_utils.qpos):]
             wrapped_env.unwrapped.set_state(qpos, qvel)
             obs = get_state(wrapped_env, wrapped_env.unwrapped._get_obs(), wrapped=True)
-            data = execute_one_rollout(policies, wrapped_env, obs, T, data, norm, wrapped=True)
+            data = execute_one_rollout(policies, wrapped_env, obs, T=2000, data=data, norm=norm, wrapped=True)
         else:
             obs = get_state(env, env.env._get_obs())
             data = execute_one_rollout(policies, env, obs, T, data, norm)
@@ -349,11 +352,8 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
 
         epoch = 'epoch_%02d' % (i) 
         if args.render:
-#             sac.record_long(T=2000, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
-#             sac.record_long(T=2000, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
-            
-            sac.record(T=1000, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
-            sac.record(T=1000, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
+            sac.record(T=2000, n=1, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
+            sac.record(T=2000, n=1, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
         
         if args.autoencode:
             print("Learning autoencoding....")

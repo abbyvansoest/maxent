@@ -13,9 +13,9 @@ parser.add_argument('--lr', type=float, default=1e-3, metavar='lr',
                     help='learning rate')
 parser.add_argument('--eps', type=float, default=0.05, metavar='eps',
                     help='exploration rate')
-parser.add_argument('--episodes', type=int, default=15, metavar='ep',
+parser.add_argument('--episodes', type=int, default=16, metavar='ep',
                     help='number of episodes per agent')
-parser.add_argument('--epochs', type=int, default=15, metavar='epo',
+parser.add_argument('--epochs', type=int, default=16, metavar='epo',
                     help='number of models to train on entropy rewards')
 parser.add_argument('--T', type=int, default=10000, metavar='T',
                     help='number of steps to roll out entropy policy')
@@ -38,7 +38,8 @@ parser.add_argument('--save_models', action='store_true',
                     help='collect a video of the final policy')
 parser.add_argument('--render', action='store_true',
                     help='render the environment')
-
+parser.add_argument('--record_steps', type=int, default=4000, metavar='rs',
+                    help='number of steps for each video recording')
 
 # run config
 parser.add_argument('--start_steps', type=int, default=10000, metavar='ss',
