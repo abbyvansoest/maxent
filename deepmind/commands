@@ -1,0 +1,1 @@
+bazel test --python_path=/usr/bin/python3 -c opt //python/tests:python_module_test
