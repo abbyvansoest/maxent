@@ -230,10 +230,11 @@ class HumanoidSoftActorCritic:
     # record film of policy
     def record(self, T, n=1, video_dir='', on_policy=False, deterministic=False):
         print("rendering env in record()")
-                
+        
+        uid = 0
         for i in range(n):
-            self.test_env.reset()
-            wrapped_env = wrappers.Monitor(self.test_env, video_dir + '_%d'%(i))
+            wrapped_env = wrappers.Monitor(self.test_env, video_dir + '/%d'%(uid))
+            uid = uid + 1
             o = wrapped_env.reset()
 
             t = 0
@@ -248,6 +249,9 @@ class HumanoidSoftActorCritic:
                 o = wrapped_env.unwrapped.state_vector()
                 if d:
                     print(t)
+                    wrapped_env.close()
+                    wrapped_env = wrappers.Monitor(self.test_env, video_dir + '/%d'%(uid))
+                    uid = uid + 1
                     wrapped_env.reset()
                     qpos = o[:len(humanoid_utils.qpos)]
                     qvel = o[len(humanoid_utils.qpos):]
@@ -256,6 +260,7 @@ class HumanoidSoftActorCritic:
 
                 wrapped_env.unwrapped.render(mode='rgb_array', width=1000, height=1000)
                 t = t + 1
+                
             wrapped_env.close()
             print('total steps in video: %d' % t)
 

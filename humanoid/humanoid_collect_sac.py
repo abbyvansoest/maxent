@@ -37,17 +37,18 @@ def select_action(policies, env, obs):
         action = policies[idx].get_action(obs, deterministic=args.deterministic)
     return action
 
-def execute_one_rollout(policies, env, obs, T, data, wrapped=False):
+def execute_one_rollout(policies, env, obs, T, data, video_dir='', wrapped=False):
 
     state_data, p_xy, random_initial_state = data
     random_T = np.floor(random.random()*T)
 
     done = False
+    uid = 1
     t = 0
     while (t < T) and not done:
-        t = t + 1
         if t % 1000 == 0:
             print(t)
+        t = t + 1
 
         action = select_action(policies, env, obs)
         
@@ -64,7 +65,11 @@ def execute_one_rollout(policies, env, obs, T, data, wrapped=False):
             done = False
             if wrapped:
                 print(t)
+                env.close()
+                base_env = gym.make('Humanoid-v2')
+                env = wrappers.Monitor(base_env, video_dir+'/%d' % uid)
                 env.reset()
+                uid = uid + 1
                 qpos = obs[:len(humanoid_utils.qpos)]
                 qvel = obs[len(humanoid_utils.qpos):]
                 env.unwrapped.set_state(qpos, qvel)
@@ -98,13 +103,16 @@ def execute_average_policy(env, policies, T, initial_state=[], n=10, render=Fals
         # only get a recording of first iteration
         if render and iteration == 0:
             print('recording mixed iteration....')
-            wrapped_env = wrappers.Monitor(env, video_dir)
+            wrapped_env = wrappers.Monitor(env, video_dir+'/%d' % 0)
             wrapped_env.reset()
             qpos = initial_state[:len(humanoid_utils.qpos)]
             qvel = initial_state[len(humanoid_utils.qpos):]
             wrapped_env.unwrapped.set_state(qpos, qvel)
-            obs = humanoid_utils.get_state(wrapped_env, wrapped_env.unwrapped._get_obs(), wrapped=True)
-            data = execute_one_rollout(policies, wrapped_env, obs, T=args.record_steps, data=data, wrapped=True)
+            obs = humanoid_utils.get_state(wrapped_env, \
+                                           wrapped_env.unwrapped._get_obs(), wrapped=True)
+            data = execute_one_rollout(policies, wrapped_env, obs, \
+                                       T=args.record_steps, data=data, \
+                                       video_dir=video_dir, wrapped=True)
         else:
             obs = humanoid_utils.get_state(env, env.env._get_obs())
             data = execute_one_rollout(policies, env, obs, T, data)
