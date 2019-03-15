@@ -1,10 +1,10 @@
 # Collect entropy-based reward policies.
 
-# python humanoid_collect_sac.py --env="Humanoid-v2" --exp_name=test --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=16
+# python swimmer_collect_sac.py --env="Swimmer-v2" --exp_name=test --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=16
 
 import sys
 import os
-sys.path.append(os.getenv("HOME") + '/maxent')
+sys.path.append(os.getenv("HOME")+'/maxent')
 
 import os
 import time
@@ -21,9 +21,9 @@ from gym import wrappers
 import tensorflow as tf
 
 import utils
+import swimmer_utils
 import plotting
-import humanoid_utils
-from humanoid_soft_actor_critic import HumanoidSoftActorCritic
+from swimmer_soft_actor_critic import SwimmerSoftActorCritic
 from reward_fn import RewardFn
 
 args = utils.get_args()
@@ -55,10 +55,10 @@ def execute_one_rollout(policies, env, obs, T, data, video_dir='', wrapped=False
         
         # Count the cumulative number of new states visited as a function of t.
         obs, _, done, _ = env.step(action)
-        obs = humanoid_utils.get_state(env, obs, wrapped)
+        obs = swimmer_utils.get_state(env, obs, wrapped)
         state_data.append(obs)
 
-        p_xy[tuple(humanoid_utils.discretize_state_2d(obs, env))] += 1
+        p_xy[tuple(swimmer_utils.discretize_state_2d(obs, env))] += 1
         if t == random_T:
             random_initial_state = obs
 
@@ -67,12 +67,12 @@ def execute_one_rollout(policies, env, obs, T, data, video_dir='', wrapped=False
             if wrapped:
                 print(t)
                 env.close()
-                base_env = gym.make('Humanoid-v2')
+                base_env = gym.make('Swimmer-v2')
                 env = wrappers.Monitor(base_env, video_dir+'/%d' % uid)
                 env.reset()
                 uid = uid + 1
-                qpos = obs[:len(humanoid_utils.qpos)]
-                qvel = obs[len(humanoid_utils.qpos):]
+                qpos = obs[:len(swimmer_utils.qpos)]
+                qvel = obs[len(swimmer_utils.qpos):]
                 env.unwrapped.set_state(qpos, qvel)
                 d = False
 
@@ -86,7 +86,7 @@ def execute_average_policy(env, policies, T, initial_state=[], n=10, render=Fals
        
     state_data = []
     random_initial_state = []
-    p_xy = np.zeros(shape=(tuple(humanoid_utils.num_states_2d)))
+    p_xy = np.zeros(shape=(tuple(swimmer_utils.num_states_2d)))
     
     data = (state_data, p_xy, random_initial_state)
 
@@ -106,16 +106,16 @@ def execute_average_policy(env, policies, T, initial_state=[], n=10, render=Fals
             print('recording mixed iteration....')
             wrapped_env = wrappers.Monitor(env, video_dir+'/%d' % 0)
             wrapped_env.reset()
-            qpos = initial_state[:len(humanoid_utils.qpos)]
-            qvel = initial_state[len(humanoid_utils.qpos):]
+            qpos = initial_state[:len(swimmer_utils.qpos)]
+            qvel = initial_state[len(swimmer_utils.qpos):]
             wrapped_env.unwrapped.set_state(qpos, qvel)
-            obs = humanoid_utils.get_state(wrapped_env, \
+            obs = swimmer_utils.get_state(wrapped_env, \
                                            wrapped_env.unwrapped._get_obs(), wrapped=True)
             data = execute_one_rollout(policies, wrapped_env, obs, \
                                        T=args.record_steps, data=data, \
                                        video_dir=video_dir, wrapped=True)
         else:
-            obs = humanoid_utils.get_state(env, env.env._get_obs())
+            obs = swimmer_utils.get_state(env, env.env._get_obs())
             data = execute_one_rollout(policies, env, obs, T, data)
             
     env.close()
@@ -150,10 +150,10 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     
     indexes = [1,5,10,15]
 
-    running_avg_p_xy = np.zeros(shape=(tuple(humanoid_utils.num_states_2d)))
+    running_avg_p_xy = np.zeros(shape=(tuple(swimmer_utils.num_states_2d)))
     running_avg_ent_xy = 0
 
-    running_avg_p_baseline_xy = np.zeros(shape=(tuple(humanoid_utils.num_states_2d)))
+    running_avg_p_baseline_xy = np.zeros(shape=(tuple(swimmer_utils.num_states_2d)))
     running_avg_ent_baseline_xy = 0
 
     running_avg_entropies_xy = []
@@ -188,7 +188,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         else:
             seed = random.randint(1, 100000)
         
-        sac = HumanoidSoftActorCritic(lambda : gym.make(args.env), reward_fn=reward_fn, xid=i+1,
+        sac = SwimmerSoftActorCritic(lambda : gym.make(args.env), reward_fn=reward_fn, xid=i+1,
             seed=seed, gamma=args.gamma, max_ep_len=1000,
             ac_kwargs=dict(hidden_sizes=[args.hid]*args.l),
             logger_kwargs=logger_kwargs)
@@ -233,7 +233,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         # compute rewards
         # update reward function
         print("Update reward function")
-        reward_fn = RewardFn(data, n_components=32, eps=.001)
+        reward_fn = RewardFn(data, eps=.001)
         reward_fn.test(test_data, env)
 
         # (save for plotting)

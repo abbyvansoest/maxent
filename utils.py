@@ -13,23 +13,23 @@ parser.add_argument('--lr', type=float, default=1e-3, metavar='lr',
                     help='learning rate')
 parser.add_argument('--eps', type=float, default=0.05, metavar='eps',
                     help='exploration rate')
-parser.add_argument('--episodes', type=int, default=100, metavar='ep',
+parser.add_argument('--episodes', type=int, default=16, metavar='ep',
                     help='number of episodes per agent')
-parser.add_argument('--epochs', type=int, default=50, metavar='epo',
+parser.add_argument('--epochs', type=int, default=16, metavar='epo',
                     help='number of models to train on entropy rewards')
-parser.add_argument('--T', type=int, default=1000, metavar='T',
+parser.add_argument('--T', type=int, default=10000, metavar='T',
                     help='number of steps to roll out entropy policy')
-parser.add_argument('--n', type=int, default=10, metavar='n',
+parser.add_argument('--n', type=int, default=20, metavar='n',
                     help='number of rollouts to average over')
-parser.add_argument('--env', type=str, default='fake', metavar='env',
+parser.add_argument('--env', type=str, default='test', metavar='env',
                     help='the env to learn')
 
 
 # policy architecture args
 parser.add_argument('--hid', type=int, default=300)
-parser.add_argument('--l', type=int, default=1)
+parser.add_argument('--l', type=int, default=2)
 parser.add_argument('--seed', '-s', type=int, default=-1)
-parser.add_argument('--exp_name', type=str, default='ant_sac')
+parser.add_argument('--exp_name', type=str, default='test')
 
 # saving args
 parser.add_argument('--models_dir', type=str, default='logs/file.out', metavar='N',
@@ -38,18 +38,20 @@ parser.add_argument('--save_models', action='store_true',
                     help='collect a video of the final policy')
 parser.add_argument('--render', action='store_true',
                     help='render the environment')
+parser.add_argument('--record_steps', type=int, default=5000, metavar='rs',
+                    help='number of steps for each video recording')
 
-# gaussian reduction args
+# Gaussian reduction args
 parser.add_argument('--gaussian', action='store_true',
-                    help='reduce dimension with random gaussian')
+                    help='use random Gaussian to reduce state')
 parser.add_argument('--reduce_dim', type=int, default=5, metavar='rd',
-                    help='dimension reduction parameter')
+                    help='dimension of Gaussian')
 
 # run config
-parser.add_argument('--avg_N', type=int, default=20, metavar='aN',
-                    help='unique states visited average runs')
 parser.add_argument('--start_steps', type=int, default=10000, metavar='ss',
                     help='start steps parameter')
+parser.add_argument('--avg_N', type=int, default=1, metavar='aN',
+                    help='unique states visited average runs')
 
 # experimental args
 parser.add_argument('--deterministic', action='store_true',
@@ -72,9 +74,6 @@ parser.add_argument('--reuse_net', action='store_true',
                     help='make new autoencoder on each epoch')
 
 args = parser.parse_args()
-
-if args.autoencode and args.gaussian:
-    raise ValueError("must set only one: --autoencode  --gaussian")
 
 def get_args():
     return copy.deepcopy(args)

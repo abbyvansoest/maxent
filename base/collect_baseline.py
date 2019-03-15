@@ -4,7 +4,8 @@
 
 # python collect_baseline.py --env="MountainCarContinuous-v0" --T=200 --train_steps=400 --episodes=300 --epochs=50 --exp_name=test
 
-import os
+import os 
+
 import time
 from datetime import datetime
 import logging
@@ -18,7 +19,7 @@ from scipy.stats import norm
 import gym
 
 from cart_entropy_policy import CartEntropyPolicy
-import utils
+import base_utils
 import curiosity
 import plotting
 
@@ -43,7 +44,7 @@ def moving_averages(values, size):
     for selection in window(values, size):
         yield sum(selection) / size
 
-args = utils.get_args()
+args = base_utils.get_args()
 Policy = CartEntropyPolicy
 
 def grad_ent(pt):
@@ -53,11 +54,11 @@ def grad_ent(pt):
         grad_p[grad_p > 100] = 1000
         return grad_p
 
-    eps = 1/np.sqrt(utils.total_state_space)
+    eps = 1/np.sqrt(base_utils.total_state_space)
     return 1/(pt + eps)
 
 def online_rewards(average_p, average_ps, t):
-    eps = 1/np.sqrt(utils.total_state_space)
+    eps = 1/np.sqrt(base_utils.total_state_space)
     reward_fn = np.zeros(shape=average_p.shape)
     for ap in average_ps:
         reward_fn += 1/(ap + eps)
@@ -78,8 +79,8 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR):
 
     video_dir = 'videos/' + args.exp_name
 
-    reward_fn = np.zeros(shape=(tuple(utils.num_states)))
-    online_reward_fn = np.zeros(shape=(tuple(utils.num_states)))
+    reward_fn = np.zeros(shape=(tuple(base_utils.num_states)))
+    online_reward_fn = np.zeros(shape=(tuple(base_utils.num_states)))
 
     # set initial state to base, motionless state.
     seed = []
@@ -90,17 +91,17 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR):
         env.env.state = [-0.50, 0]
         seed = env.env.state
 
-    running_avg_p = np.zeros(shape=(tuple(utils.num_states)))
+    running_avg_p = np.zeros(shape=(tuple(base_utils.num_states)))
     running_avg_ent = 0
     running_avg_entropies = []
     running_avg_ps = []
 
-    running_avg_p_online = np.zeros(shape=(tuple(utils.num_states)))
+    running_avg_p_online = np.zeros(shape=(tuple(base_utils.num_states)))
     running_avg_ent_online = 0
     running_avg_entropies_online = []
     running_avg_ps_online = []
 
-    running_avg_p_baseline = np.zeros(shape=(tuple(utils.num_states)))
+    running_avg_p_baseline = np.zeros(shape=(tuple(base_utils.num_states)))
     running_avg_ent_baseline = 0
     running_avg_entropies_baseline = []
     running_avg_ps_baseline = []
@@ -116,8 +117,8 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR):
     for i in range(epochs):
 
         # Learn policy that maximizes current reward function.
-        policy = Policy(env, args.gamma, args.lr, utils.obs_dim, utils.action_dim)
-        online_policy = Policy(env, args.gamma, args.lr, utils.obs_dim, utils.action_dim) 
+        policy = Policy(env, args.gamma, args.lr, base_utils.obs_dim, base_utils.action_dim)
+        online_policy = Policy(env, args.gamma, args.lr, base_utils.obs_dim, base_utils.action_dim) 
 
         if i == 0:
             policy.learn_policy(reward_fn, 
@@ -235,7 +236,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR):
 
         print("--------------------------------")
 
-        plotting.heatmap(running_avg_p, average_p, i)
+        plotting.heatmap(running_avg_p, average_p, i, args.env)
 
     plotting.running_average_entropy(running_avg_entropies, running_avg_entropies_baseline)
     plotting.running_average_entropy3(running_avg_entropies, running_avg_entropies_baseline, running_avg_entropies_online)
@@ -269,8 +270,8 @@ def main():
         # save metadata from the run. 
         with open(MODEL_DIR + "metadata", "w") as metadata:
             metadata.write("args: %s\n" % args)
-            metadata.write("num_states: %s\n" % str(utils.num_states))
-            metadata.write("state_bins: %s\n" % utils.state_bins)
+            metadata.write("num_states: %s\n" % str(base_utils.num_states))
+            metadata.write("state_bins: %s\n" % base_utils.state_bins)
 
     plotting.FIG_DIR = 'figs/' + args.env + '/'
     plotting.model_time = args.exp_name + '/'

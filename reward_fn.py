@@ -9,14 +9,18 @@ import time
 
 class RewardFn:
 
-    def __init__(self, data, eps=.001):
+    def __init__(self, data, n_components=None, eps=.001):
         self.eps = eps
         self.kde = None
+        self.pca = None
 
         if data is not None:
             data = np.array(data)
-            self.pca = PCA(n_components=32, whiten=False)
-            data = self.pca.fit_transform(data)
+
+            if n_components is not None:
+                self.pca = PCA(n_components=n_components, whiten=False)
+                data = self.pca.fit_transform(data)
+
             self.kde = self.fit_distribution(data)
 
     def fit_distribution(self, data):
@@ -24,9 +28,8 @@ class RewardFn:
         return kde
 
     def get_prob(self, x):
-        x = self.pca.transform(x)
-        # print(self.kde.score(x))
-        # print(np.exp(self.kde.score(x)))
+        if self.pca is not None:
+            x = self.pca.transform(x)
         return np.exp(self.kde.score(x))
 
     def reward(self, x):
@@ -40,6 +43,4 @@ class RewardFn:
         for data in x:
             continue
             prob = self.get_prob([data])
-            # print(prob)
-            # print('----------')
 

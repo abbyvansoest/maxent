@@ -1,7 +1,7 @@
 # experimenting with curiosity exploration method.
 # Code derived from: https://github.com/pytorch/examples/blob/master/reinforcement_learning/reinforce.py
 
-# example command setting args in utils.py
+# example command setting args in base_utils.py
 # python curiosity.py  --models_dir=models-MountainCarContinuous-v0/models_2018_11_28-17-45/ --env="MountainCarContinuous-v0"
 # python curiosity.py  --models_dir=models-Pendulum-v0/models_2018_11_29-09-48/ --env="Pendulum-v0"
 
@@ -18,8 +18,8 @@ from gym import wrappers
 import torch
 from torch.distributions import Categorical
 
-import utils
-args = utils.get_args()
+import base_utils
+args = base_utils.get_args()
 
 def select_action(probs):
     m = Categorical(probs)
@@ -31,22 +31,22 @@ def select_action(probs):
     return [1]
 
 def get_obs(state):
-    if utils.args.env == "Pendulum-v0":
+    if base_utils.args.env == "Pendulum-v0":
         theta, thetadot = state
         return np.array([np.cos(theta), np.sin(theta), thetadot])
-    elif utils.args.env == "MountainCarContinuous-v0":
+    elif base_utils.args.env == "MountainCarContinuous-v0":
         return np.array(state)
 
     # unroll for T steps and compute p
 def execute_policy_internal(env, T, policies, state, render):
     random_T = np.floor(random.random()*T)
-    p = np.zeros(shape=(tuple(utils.num_states)))
+    p = np.zeros(shape=(tuple(base_utils.num_states)))
     random_initial_state = []
 
     for t in range(T):
         # Compute average probability over action space for state.
-        probs = torch.tensor(np.zeros(shape=(1,utils.action_dim))).float()
-        var = torch.tensor(np.zeros(shape=(1,utils.action_dim))).float()
+        probs = torch.tensor(np.zeros(shape=(1,base_utils.action_dim))).float()
+        var = torch.tensor(np.zeros(shape=(1,base_utils.action_dim))).float()
         for policy in policies:
             prob = policy.get_probs(state)
             probs += prob
@@ -54,7 +54,7 @@ def execute_policy_internal(env, T, policies, state, render):
         action = select_action(probs)
         
         state, reward, done, _ = env.step(action)
-        p[tuple(utils.discretize_state(state))] += 1
+        p[tuple(base_utils.discretize_state(state))] += 1
         if (t == random_T and not render):
             random_initial_state = env.env.state
 
@@ -69,7 +69,7 @@ def execute_policy_internal(env, T, policies, state, render):
 # run a simulation to see how the average policy behaves.
 def execute_average_policy(env, policies, T, initial_state=[], avg_runs=1, render=False):
     
-    average_p = np.zeros(shape=(tuple(utils.num_states)))
+    average_p = np.zeros(shape=(tuple(base_utils.num_states)))
     avg_entropy = 0
     random_initial_state = []
 

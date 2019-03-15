@@ -6,10 +6,9 @@
 # python ant_collect_sac.py --env="Ant-v2" --exp_name=_discretize_autoencoder_6 --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=30 --autoencode --autoencoder_reduce_dim=6
 
 import sys
-sys.path.append('/home/abbyvs')
-sys.path.append('/home/abbyvs/spinningup')
-
 import os
+sys.path.append(os.getenv("HOME") + '/maxent')
+
 import time
 from datetime import datetime
 import random
@@ -341,6 +340,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
             ac_kwargs=dict(hidden_sizes=[args.hid]*args.l),
             logger_kwargs=logger_kwargs, 
             normalization_factors=normalization_factors)
+
         # The first policy is random
         if i == 0:
             sac.soft_actor_critic(epochs=0) 
@@ -491,6 +491,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     plotting.percent_state_space_reached(pct_visited, pct_visited_baseline, ext='_total')
     plotting.percent_state_space_reached(pct_visited_xy, pct_visited_xy_baseline, ext="_xy")
     
+    # TODO: get final weights for the policies. SAve in a pickle file in experiment_directory
     return policies
 
 def main():

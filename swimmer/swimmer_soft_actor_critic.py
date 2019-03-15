@@ -1,12 +1,19 @@
 # Code derived from: https://spinningup.openai.com/en/latest/algorithms/sac.html
+import sys
+import os
+sys.path.append(os.getenv("HOME")+'/maxent')
 
 import numpy as np
 import tensorflow as tf
+import gym
+from gym import wrappers
+
+import time
 import core
 from core import get_vars
 from spinup.utils.logx import EpochLogger
 
-import reacher_utils
+import swimmer_utils
 
 class ReplayBuffer:
     """
@@ -14,6 +21,7 @@ class ReplayBuffer:
     """
 
     def __init__(self, obs_dim, act_dim, size):
+        print(obs_dim)
         self.obs1_buf = np.zeros([size, obs_dim], dtype=np.float32)
         self.obs2_buf = np.zeros([size, obs_dim], dtype=np.float32)
         self.acts_buf = np.zeros([size, act_dim], dtype=np.float32)
@@ -39,16 +47,22 @@ class ReplayBuffer:
                     rews=self.rews_buf[idxs],
                     done=self.done_buf[idxs])
 
+"""
 
-class ReacherSoftActorCritic:
+Soft Actor-Critic (With slight variations that bring it closer to TD3)
+
+"""
+
+class SwimmerSoftActorCritic:
 
     def var_scope(self, var):
         return self.main_scope + '/' + var
 
-    def __init__(self, env_fn, reward_fn=[], actor_critic=core.mlp_actor_critic, xid=0, seed=0, max_ep_len=1000,
-        gamma=.99, alpha=0.2, lr=1e-3, polyak=0.995, replay_size=int(1e6), 
-        ac_kwargs=dict(), logger_kwargs=dict(), normalization_factors=[], learn_reduced=False):
-        
+    def __init__(self, env_fn, reward_fn=None, actor_critic=core.mlp_actor_critic, 
+                    xid=0, seed=0, max_ep_len=1000, gamma=.99, alpha=0.2, 
+                    lr=1e-3, polyak=0.995, replay_size=int(1e6), ac_kwargs=dict(), 
+                    logger_kwargs=dict()):
+
         tf.set_random_seed(seed)
         np.random.seed(seed)
 
@@ -59,13 +73,9 @@ class ReacherSoftActorCritic:
 
         self.max_ep_len = max_ep_len
         self.reward_fn = reward_fn
-        self.normalization_factors = normalization_factors
-        self.learn_reduced = learn_reduced
         
         self.env, self.test_env = env_fn(), env_fn()
-        self.obs_dim = reacher_utils.state_dim
-        if self.learn_reduced:
-            self.obs_dim = reacher_utils.expected_state_dim
+        self.obs_dim = len(self.env.env.state_vector())
         self.act_dim = self.env.action_space.shape[0]
 
         # Action limit for clamping: critically, assumes all dimensions share the same bound!
@@ -80,7 +90,6 @@ class ReacherSoftActorCritic:
             self.x_ph, self.a_ph, self.x2_ph, self.r_ph, self.d_ph = core.placeholders(self.obs_dim, self.act_dim, self.obs_dim, None, None)
 
             # Main outputs from computation graph
-            # with tf.device('/job:localhost/replica:0/task:0/device:GPU:2'):
             with tf.variable_scope(self.main_scope):
                 self.mu, self.pi, self.logp_pi, self.q1, self.q2, self.q1_pi, self.q2_pi, self.v, self.std = actor_critic(self.x_ph, self.a_ph, **ac_kwargs)
             
@@ -137,111 +146,123 @@ class ReacherSoftActorCritic:
 
 
     def reward(self, env, r, o):
-        if len(self.reward_fn) == 0:
-            return r
-        
-        # use self.normalization_factors to normalize the state.
-        tup = tuple(reacher_utils.discretize_state(o, self.normalization_factors))
-        return self.reward_fn[tup]
+        return self.reward_fn.reward(o.reshape(1, -1))
 
     def get_action(self, o, deterministic=False): 
-        if self.learn_reduced:
-            o = reacher_utils.convert_obs(o)
         with self.graph.as_default():
             act_op = self.mu if deterministic else self.pi
             action = self.sess.run(act_op, feed_dict={self.x_ph: o.reshape(1,-1)})[0]
             return action
         
     def get_sigma(self, o):
-        if self.learn_reduced:
-            o = reacher_utils.convert_obs(o)
         with self.graph.as_default():
             return self.sess.run(self.std, feed_dict={self.x_ph: o.reshape(1,-1)})[0]
 
-    def test_agent(self, T, n=10, initial_state=[], store_log=True, deterministic=True, reset=False):
-        
+    def test_agent(self, T, n=10, initial_state=[], 
+        store_log=True, deterministic=True):
+
         denom = 0
 
         for j in range(n):
             o, r, d, ep_ret, ep_len = self.test_env.reset(), 0, False, 0, 0
             
             if len(initial_state) > 0:
-                qpos = initial_state[:len(reacher_utils.qpos)]
-                qvel = initial_state[len(reacher_utils.qpos):]
+                qpos = initial_state[:len(swimmer_utils.qpos)]
+                qvel = initial_state[len(swimmer_utils.qpos):]
                 self.test_env.env.set_state(qpos, qvel)
                 o = self.test_env.env._get_obs()
             
-            o = reacher_utils.get_state(self.test_env, o)
+            o = swimmer_utils.get_state(self.test_env, o)
             while not(d or (ep_len == T)):
                 # Take deterministic actions at test time 
                 a = self.get_action(o, deterministic)
                 o, r, d, _ = self.test_env.step(a)
-                o = reacher_utils.get_state(self.test_env, o)
+                o = swimmer_utils.get_state(self.test_env, o)
 
                 r = self.reward(self.test_env, r, o)
                 ep_ret += r
                 ep_len += 1
                 denom += 1
-                
-                if d and reset:
+               
+            # TODO(abbyvs): CHANGE HERE?
+                if d:
                     d = False
 
             if store_log:
                 self.logger.store(TestEpRet=ep_ret, TestEpLen=ep_len)
-
-
-    def test_agent_random(self, T, normalization_factors=[], n=10):
+                
+                
+    def test_agent_random(self, T,  n=10):
         
-        p = np.zeros(shape=(tuple(reacher_utils.num_states)))
-        p_joint0 = np.zeros(shape=(tuple(reacher_utils.num_states_2d)))
-        p_joint1 = np.zeros(shape=(tuple(reacher_utils.num_states_2d)))
-        
-        cumulative_states_visited_baseline = 0
-        states_visited_baseline = []
-        cumulative_states_visited_joint0_baseline = 0
-        states_visited_joint0_baseline = []
-        cumulative_states_visited_joint1_baseline = 0
-        states_visited_joint1_baseline = []
+        p_xy = np.zeros(shape=(tuple(swimmer_utils.num_states_2d)))
+        cumulative_states_visited_xy_baseline = 0
+        states_visited_xy_baseline = []
 
         denom = 0
 
         for j in range(n):
+            print(j)
             o, r, d, ep_ret, ep_len = self.test_env.reset(), 0, False, 0, 0
-            o = reacher_utils.get_state(self.test_env, o)
+            o = swimmer_utils.get_state(self.test_env, o)
             while not(d or (ep_len == T)):
                 a = self.test_env.action_space.sample()
                 o, r, d, _ = self.test_env.step(a)
-                o = reacher_utils.get_state(self.test_env, o)
+                o = swimmer_utils.get_state(self.test_env, o)
                 r = self.reward(self.test_env, r, o)
                 
                 # if this is the first time you are seeing this state, increment.
-                if p[tuple(reacher_utils.discretize_state(o, normalization_factors))] == 0:
-                    cumulative_states_visited_baseline += 1
-                states_visited_baseline.append(cumulative_states_visited_baseline)
-                if p_joint0[tuple(reacher_utils.discretize_state_2d(o, reacher_utils.joint0th, reacher_utils.joint0v, normalization_factors))]  == 0:
-                    cumulative_states_visited_joint0_baseline += 1
-                states_visited_joint0_baseline.append(cumulative_states_visited_joint0_baseline)
+                if p_xy[tuple(swimmer_utils.discretize_state_2d(o, self.test_env))]  == 0:
+                    cumulative_states_visited_xy_baseline += 1
+                states_visited_xy_baseline.append(cumulative_states_visited_xy_baseline)
                 
-                if p_joint1[tuple(reacher_utils.discretize_state_2d(o, reacher_utils.joint1th, reacher_utils.joint1v, normalization_factors))]  == 0:
-                    cumulative_states_visited_joint1_baseline += 1
-                states_visited_joint1_baseline.append(cumulative_states_visited_joint1_baseline)
-                
-                p[tuple(reacher_utils.discretize_state(o, normalization_factors))] += 1
-                p_joint0[tuple(reacher_utils.discretize_state_2d(o, reacher_utils.joint0th, reacher_utils.joint0v, normalization_factors))] += 1
-                p_joint1[tuple(reacher_utils.discretize_state_2d(o, reacher_utils.joint1th, reacher_utils.joint1v, normalization_factors))] += 1
+                p_xy[tuple(swimmer_utils.discretize_state_2d(o, self.test_env))] += 1
                 
                 denom += 1
                 ep_len += 1
                 
-                # CRITICAL: ignore done signal
-                if d:
+                if d: # CRITICAL: ignore done signal
                     d = False
         
-        p /= float(denom)
-        p_joint0 /= float(denom)
-        p_joint1 /= float(denom)
+        p_xy /= float(denom)
         
-        return p, p_joint0, p_joint1, states_visited_baseline, states_visited_joint0_baseline, states_visited_joint1_baseline
+        return p_xy, states_visited_xy_baseline
+
+    # record film of policy
+    def record(self, T, n=1, video_dir='', on_policy=False, deterministic=False):
+        print("rendering env in record()")
+        
+        uid = 0
+        for i in range(n):
+            wrapped_env = wrappers.Monitor(self.test_env, video_dir + '/%d'%(uid))
+            uid = uid + 1
+            o = wrapped_env.reset()
+
+            t = 0
+            d = False
+            while t < T and not d:
+                o = wrapped_env.unwrapped.state_vector()
+                if on_policy:
+                    a = self.get_action(o, deterministic)
+                else:
+                    a = wrapped_env.unwrapped.action_space.sample()
+                o, r, d, _ = wrapped_env.step(a)
+                o = wrapped_env.unwrapped.state_vector()
+                if d:
+                    print(t)
+                    wrapped_env.close()
+                    wrapped_env = wrappers.Monitor(self.test_env, video_dir + '/%d'%(uid))
+                    uid = uid + 1
+                    wrapped_env.reset()
+                    qpos = o[:len(swimmer_utils.qpos)]
+                    qvel = o[len(swimmer_utils.qpos):]
+                    wrapped_env.unwrapped.set_state(qpos, qvel)
+                    d = False
+
+                wrapped_env.unwrapped.render(mode='rgb_array', width=1000, height=1000)
+                t = t + 1
+                
+            wrapped_env.close()
+            print('total steps in video: %d' % t)
 
     def soft_actor_critic(self, initial_state=[], steps_per_epoch=5000, epochs=100,
             batch_size=100, start_steps=10000, save_freq=1):
@@ -258,14 +279,15 @@ class ReacherSoftActorCritic:
             self.logger.setup_tf_saver(self.sess, inputs={'x': self.x_ph, 'a': self.a_ph}, 
                                         outputs={'mu': self.mu, 'pi': self.pi, 'q1': self.q1, 'q2': self.q2, 'v': self.v})
 
+            start_time = time.time()
             o, r, d, ep_ret, ep_len = self.env.reset(), 0, False, 0, 0
             if len(initial_state) > 0:
-                qpos = initial_state[:len(reacher_utils.qpos)]
-                qvel = initial_state[len(reacher_utils.qpos):]
+                qpos = initial_state[:len(swimmer_utils.qpos)]
+                qvel = initial_state[len(swimmer_utils.qpos):]
                 self.env.env.set_state(qpos, qvel)
                 o = self.env.env._get_obs()
             
-            o = reacher_utils.get_state(self.env, o)
+            o = swimmer_utils.get_state(self.env, o)
 
             total_steps = steps_per_epoch * epochs
 
@@ -286,11 +308,8 @@ class ReacherSoftActorCritic:
 
                 # Step the env
                 o2, r, d, _ = self.env.step(a)
-                o2 = reacher_utils.get_state(self.env, o2)
+                o2 = swimmer_utils.get_state(self.env, o2)
                 r = self.reward(self.env, r, o2)
-
-                # TODO: cap velocity.
-                # TODO: something with the way I am converting range of theta to circular?
                 
                 ep_ret += r
                 ep_len += 1
@@ -301,11 +320,7 @@ class ReacherSoftActorCritic:
                 d = False if ep_len == self.max_ep_len else d
 
                 # Store experience to replay buffer
-                if self.learn_reduced:
-                    self.replay_buffer.store(reacher_utils.convert_obs(o), 
-                                             a, r, reacher_utils.convert_obs(o2), d)
-                else:
-                    self.replay_buffer.store(o, a, r, o2, d)
+                self.replay_buffer.store(o, a, r, o2, d)
 
                 # Super critical: update most recent observation.
                 o = o2
@@ -333,11 +348,11 @@ class ReacherSoftActorCritic:
                     self.logger.store(EpRet=ep_ret, EpLen=ep_len)
                     o, r, d, ep_ret, ep_len = self.env.reset(), 0, False, 0, 0
                     if len(initial_state) > 0:
-                        qpos = initial_state[:len(reacher_utils.qpos)]
-                        qvel = initial_state[len(reacher_utils.qpos):]
+                        qpos = initial_state[:len(swimmer_utils.qpos)]
+                        qvel = initial_state[len(swimmer_utils.qpos):]
                         self.env.env.set_state(qpos, qvel)
                         o = self.env.env._get_obs()
-                    o = reacher_utils.get_state(self.env, o)
+                    o = swimmer_utils.get_state(self.env, o)
 
                 # End of epoch wrap-up
                 if t > 0 and t % steps_per_epoch == 0:
@@ -363,33 +378,33 @@ class ReacherSoftActorCritic:
                     self.logger.dump_tabular()
 
 
-# if __name__ == '__main__':
-#     import argparse
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument('--env', type=str, default='HalfCheetah-v2')
-#     parser.add_argument('--hid', type=int, default=300)
-#     parser.add_argument('--l', type=int, default=1)
-#     parser.add_argument('--gamma', type=float, default=0.99)
-#     parser.add_argument('--seed', '-s', type=int, default=0)
-#     parser.add_argument('--epochs', type=int, default=50)
-#     parser.add_argument('--exp_name', type=str, default='sac')
-#     args = parser.parse_args()
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--env', type=str, default='HalfCheetah-v2')
+    parser.add_argument('--hid', type=int, default=300)
+    parser.add_argument('--l', type=int, default=1)
+    parser.add_argument('--gamma', type=float, default=0.99)
+    parser.add_argument('--seed', '-s', type=int, default=0)
+    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--exp_name', type=str, default='sac')
+    args = parser.parse_args()
 
-#     from spinup.utils.run_utils import setup_logger_kwargs
-#     logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed)
+    from spinup.utils.run_utils import setup_logger_kwargs
+    logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed)
 
-#     sac1 = ReacherSoftActorCritic(lambda : gym.make(args.env), 
-#         actor_critic=core.mlp_actor_critic, 
-#         seed=args.seed, gamma=args.gamma, 
-#         ac_kwargs=dict(hidden_sizes=[args.hid]*args.l),
-#         logger_kwargs=logger_kwargs)
-#     sac1.soft_actor_critic(epochs=args.epochs)
+    sac1 = SwimmerSoftActorCritic(lambda : gym.make(args.env), 
+        actor_critic=core.mlp_actor_critic, 
+        seed=args.seed, gamma=args.gamma, 
+        ac_kwargs=dict(hidden_sizes=[args.hid]*args.l),
+        logger_kwargs=logger_kwargs)
+    sac1.soft_actor_critic(epochs=args.epochs)
 
-#     print("---------- SAC 2 ---------")
+    print("---------- SAC 2 ---------")
 
-#     sac2 = ReacherSoftActorCritic(lambda : gym.make(args.env), 
-#         actor_critic=core.mlp_actor_critic, 
-#         seed=args.seed, gamma=args.gamma, 
-#         ac_kwargs=dict(hidden_sizes=[args.hid]*args.l),
-#         logger_kwargs=logger_kwargs)
-#     sac2.soft_actor_critic(epochs=args.epochs)
+    sac2 = SwimmerSoftActorCritic(lambda : gym.make(args.env), 
+        actor_critic=core.mlp_actor_critic, 
+        seed=args.seed, gamma=args.gamma, 
+        ac_kwargs=dict(hidden_sizes=[args.hid]*args.l),
+        logger_kwargs=logger_kwargs)
+    sac2.soft_actor_critic(epochs=args.epochs)

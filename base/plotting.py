@@ -13,9 +13,6 @@ import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 from mpl_toolkits.mplot3d import Axes3D
 
-import utils
-args = utils.get_args()
-
 # By default, the plotter saves figures to the directory where it's executed.
 FIG_DIR = ''
 model_time = ''
@@ -49,7 +46,7 @@ def running_average_entropy3(running_avg_entropies, running_avg_entropies_baseli
     plt.ylabel("Policy Entropy")
     plt.savefig(fname)
 
-def heatmap(running_avg_p, avg_p, i):
+def heatmap(running_avg_p, avg_p, i, env):
     # Create running average heatmap.
     plt.figure()
     min_value = np.min(np.ma.log(running_avg_p))
@@ -58,7 +55,7 @@ def heatmap(running_avg_p, avg_p, i):
     plt.xticks([], [])
     plt.yticks([], [])
     plt.xlabel("v")
-    if (args.env == "MountainCarContinuous-v0"):
+    if (env == "MountainCarContinuous-v0"):
         plt.ylabel("x")
     else:
         plt.ylabel(r"$\Theta$")
@@ -77,7 +74,7 @@ def heatmap(running_avg_p, avg_p, i):
     plt.xticks([], [])
     plt.yticks([], [])
     plt.xlabel("v")
-    if (args.env == "MountainCarContinuous-v0"):
+    if (env == "MountainCarContinuous-v0"):
         plt.ylabel("x")
     else:
         plt.ylabel(r"$\Theta$")

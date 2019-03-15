@@ -11,6 +11,11 @@ env = gym.make(args.env)
 qpos = env.env.init_qpos
 qvel = env.env.init_qvel
 
+state_dim = int(env.env.state_vector().shape[0])
+action_dim = int(env.action_space.sample().shape[0])
+print("state_dim = %d" % state_dim)
+print("action_dim = %d" % action_dim)
+
 start = 0
 stop = 2
 
