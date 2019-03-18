@@ -15,6 +15,7 @@ from datetime import datetime
 import random
 
 import numpy as np
+import cvxpy as cvx
 import scipy.stats
 from scipy.interpolate import interp2d
 from scipy.interpolate import spline
@@ -124,11 +125,19 @@ def compute_states_visited_xy(env, policies, T, n, N=20, initial_state=[], basel
     states_visited_xy /= float(N)
     return states_visited_xy
 
-def select_action(policies, env, obs):
+def select_action(policies, weights, env, obs):
+    # TODO(abbys): fully-corrective weights for policies
+    
+    if len(weights) != len(policies):
+        print("Weights array is wrong dimension -- using uniform weighting")
+        weights = np.ones(len(policies))/float(len(policies))
+    
+    indexes = np.arange(len(policies))
+    idx = np.random.choice(indexes, p=weights)
     
     # select random policy uniform distribution
     # take non-deterministic action for that policy
-    idx = random.randint(0, len(policies) - 1)
+#     idx = random.randint(0, len(policies) - 1)
     if idx == 0:
         action = env.action_space.sample()
     else:
@@ -136,7 +145,7 @@ def select_action(policies, env, obs):
     
     return action
 
-def execute_one_rollout(policies, env, start_obs, T, data, norm, wrapped=False):
+def execute_one_rollout(policies, weights, env, start_obs, T, data, norm, wrapped=False):
     obs = start_obs
     
     p, p_xy, cumulative_states_visited, states_visited, \
@@ -146,7 +155,7 @@ def execute_one_rollout(policies, env, start_obs, T, data, norm, wrapped=False):
     
     for t in range(T):
             
-        action = select_action(policies, env, obs)
+        action = select_action(policies, weights, env, obs)
         
         # Count the cumulative number of new states visited as a function of t.
         obs, _, done, _ = env.step(action)
@@ -178,7 +187,7 @@ def execute_one_rollout(policies, env, start_obs, T, data, norm, wrapped=False):
     return data
                 
 # run a simulation to see how the average policy behaves.
-def execute_average_policy(env, policies, T,
+def execute_average_policy(env, policies, T, weights,
                            reward_fn=[], norm=[], initial_state=[], 
                            n=10, render=False, video_dir='', epoch=0):
     
@@ -214,10 +223,10 @@ def execute_average_policy(env, policies, T,
             qvel = initial_state[len(ant_utils.qpos):]
             wrapped_env.unwrapped.set_state(qpos, qvel)
             obs = get_state(wrapped_env, wrapped_env.unwrapped._get_obs(), wrapped=True)
-            data = execute_one_rollout(policies, wrapped_env, obs, T=2000, data=data, norm=norm, wrapped=True)
+            data = execute_one_rollout(policies, weights, wrapped_env, obs, T=2000, data=data, norm=norm, wrapped=True)
         else:
             obs = get_state(env, env.env._get_obs())
-            data = execute_one_rollout(policies, env, obs, T, data, norm)
+            data = execute_one_rollout(policies, weights, env, obs, T, data, norm)
     
     env.close()
     
@@ -253,6 +262,82 @@ def entropy(pt):
             continue
         entropy += p*np.log(p)
     return -entropy
+    
+# TODO: Get the fully corrective weights -- weighting that maximizes entropy.
+# USE GRADIENT DESCENT.....
+# goal is to maximize the entropy function.
+# so, take the gradient of the entropy and move in that direction
+def proj_unit_simplex(y):
+    '''
+    Returns the point in the simplex a^Tx = 1, x&amp;amp;amp;amp;gt;=0 that is
+     closest to y (according to Euclidian distance)
+    '''
+    d = len(y)
+    a = np.ones(d)
+    # setup the objective and constraints and solve the problem
+    x = cvx.Variable(d)
+    obj = cvx.Minimize(cvx.sum_squares(x - y))
+    constr = [x >= 0, a*x == 1]
+    prob = cvx.Problem(obj, constr)
+    prob.solve()
+ 
+    return np.array(x.value)
+
+def fully_corrective_weights(distributions, eps=1e-3, step=.2):
+    N = len(distributions)    
+    
+    weights = geometric_weights(distributions)
+    prev_weights = np.zeros(N)
+    prev_entropy = 0
+    
+    print('-- Starting gradient descent --')
+    for i in range(100000):
+        weights = proj_unit_simplex(weights)
+        gradients = np.zeros(N)
+        
+        # get the d_mix based on the current weights
+        d_max = np.zeros(shape=(distributions[0].reshape(-1).shape))
+        for w, d in zip(weights, distributions):
+            d_max += np.array(w*d).reshape(-1)
+        
+        log_d_max = np.log(d_max + 1)
+        
+        for idx in range(N):
+            grad_w = -np.sum(distributions[idx].reshape(-1)*log_d_max)
+            gradients[idx] = grad_w
+        
+        entropy = scipy.stats.entropy(d_max)
+        norm =  np.linalg.norm(weights - prev_weights)
+        
+        print('Iteration %d: entropy = %.4f' % (i, entropy))
+        print('weights = %s' % str(weights))
+        print('norm = %.2f' % norm)
+
+        if abs(entropy - prev_entropy) < eps:
+            break
+        if norm < eps:
+            break
+        
+        # Step in the direction of the gradient.
+        prev_weights = weights
+        prev_entropy = entropy
+        weights = weights + step*gradients
+        
+    return weights
+
+def geometric_weights(distributions):
+    weights = [.90**(i+1) for i in range(len(distributions))]
+    return weights
+
+def get_weights(distributions):
+    weights = np.ones(len(distributions))/float(len(distributions)) 
+    if args.fully_corrective:
+        weights = fully_corrective_weights(distributions)
+    elif args.geometric:
+        weights = geometric_weights(distributions)
+    weights = weights / np.sum(weights)
+    print(weights)
+    return weights
 
 # Main loop of maximum entropy program. WORKING HERE
 # Iteratively collect and learn T policies using policy gradients and a reward
@@ -271,7 +356,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     indexes = [1,5,10,15]
     states_visited_indexes = [0,5,10,15]
     
-    states_visited_cumulative = []
+    states_visited_cumulative = [] 
     states_visited_cumulative_baseline = []
 
     running_avg_p = np.zeros(shape=(tuple(ant_utils.num_states)))
@@ -300,6 +385,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     avg_ps_baseline_xy = []
 
     policies = []
+    distributions = []
     initial_state = init_state(env)
     
     prebuf = ExperienceBuffer()
@@ -349,8 +435,12 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
                               initial_state=initial_state, 
                               start_steps=args.start_steps) 
         policies.append(sac)
+        
+        p, _ = sac.test_agent(T, normalization_factors=normalization_factors)
+        distributions.append(p)
+        weights = get_weights(distributions)
 
-        epoch = 'epoch_%02d' % (i) 
+        epoch = 'epoch_%02d' % (i)
         if args.render:
             sac.record(T=2000, n=1, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
             sac.record(T=2000, n=1, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
@@ -365,7 +455,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         # Estimate distribution and entropy.
         print("Executing mixed policy...")
         average_p, average_p_xy, initial_state, states_visited, states_visited_xy = \
-            execute_average_policy(env, policies, T,
+            execute_average_policy(env, policies, T, weights,
                                    reward_fn=reward_fn, norm=normalization_factors, 
                                    initial_state=initial_state, n=args.n, 
                                    render=args.render, video_dir=video_dir+'/mixed/'+epoch, epoch=i)

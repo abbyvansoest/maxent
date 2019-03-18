@@ -71,10 +71,18 @@ parser.add_argument('--autoencoder_reduce_dim', type=int, default=6, metavar='ar
 parser.add_argument('--reuse_net', action='store_true',
                     help='make new autoencoder on each epoch')
 
+# weighting arguments
+parser.add_argument('--geometric', action='store_true',
+                    help='use geometric sequence to weight policies')
+parser.add_argument('--fully_corrective', action='store_true',
+                    help='use fully corrective weighting to weight policies')
+
 args = parser.parse_args()
 
 if args.autoencode and args.gaussian:
     raise ValueError("must set only one: --autoencode  --gaussian")
+if args.geometric and args.fully_corrective:
+    raise ValueError("must set only one: --fully_corrective  --geometric")
 
 def get_args():
     return copy.deepcopy(args)
