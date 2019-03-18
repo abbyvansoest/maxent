@@ -146,11 +146,11 @@ def fully_corrective_weights(distributions, eps=1e-3, step=.2):
         
         print('Iteration %d: entropy = %.4f' % (i, entropy))
         print('weights = %s' % str(weights))
-        print('norm = %.2f' % norm)
+        print('norm = %.4f' % norm)
 
         if abs(entropy - prev_entropy) < eps:
             break
-        if norm < eps:
+        if norm < 5e-3:
             break
         
         # Step in the direction of the gradient.
@@ -163,6 +163,7 @@ def fully_corrective_weights(distributions, eps=1e-3, step=.2):
 def geometric_weights(distributions):
     N = len(distributions)
     weights = [.90**(N-i) for i in range(N)]
+    weights = proj_unit_simplex(weights)
     return weights
 
 def get_weights(distributions):

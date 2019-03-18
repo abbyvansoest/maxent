@@ -14,9 +14,9 @@ qvel = env.env.init_qvel
 start = 0
 stop = 2
 
-min_bin_2d = -20
-max_bin_2d = 20
-num_bins_2d = 20
+min_bin_2d = -30
+max_bin_2d = 30
+num_bins_2d = 40
 
 def get_state(env, obs, wrapped=False):
     if wrapped:

@@ -158,10 +158,12 @@ class HumanoidSoftActorCritic:
         with self.graph.as_default():
             return self.sess.run(self.std, feed_dict={self.x_ph: o.reshape(1,-1)})[0]
 
-    def test_agent(self, T, n=10, initial_state=[], 
-        store_log=True, deterministic=True):
-
+    def test_agent(self, T, n=10, initial_state=[],
+                   store_log=True, deterministic=True, reset=False):
+        
         denom = 0
+        
+        p_xy = np.zeros(shape=(tuple(humanoid_utils.num_states_2d)))
 
         for j in range(n):
             o, r, d, ep_ret, ep_len = self.test_env.reset(), 0, False, 0, 0
@@ -183,14 +185,17 @@ class HumanoidSoftActorCritic:
                 ep_ret += r
                 ep_len += 1
                 denom += 1
-               
-            # TODO(abbyvs): CHANGE HERE?
-                if d:
+                
+                p_xy[tuple(humanoid_utils.discretize_state_2d(o, self.test_env))] += 1
+                
+                if d and reset:
                     d = False
 
             if store_log:
                 self.logger.store(TestEpRet=ep_ret, TestEpLen=ep_len)
                 
+        p_xy /= float(denom)
+        return p_xy
                 
     def test_agent_random(self, T,  n=10):
         
