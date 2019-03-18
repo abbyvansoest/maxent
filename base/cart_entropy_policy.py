@@ -11,7 +11,7 @@ from torch.distributions import Normal
 
 import gym
 from gym import wrappers
-import utils
+import base_utils
 
 # Get the initial zero-state for the env.
 def init_state(env):
@@ -44,7 +44,7 @@ class CartEntropyPolicy(nn.Module):
         self.obs_dim = obs_dim
         self.action_dim = action_dim
 
-        self.init_state = np.array(init_state(utils.args.env))
+        self.init_state = np.array(init_state(base_utils.args.env))
         self.env.seed(int(time.time())) # seed environment
 
     def init(self, init_policy):
@@ -101,19 +101,19 @@ class CartEntropyPolicy(nn.Module):
         return policy_loss
 
     def get_initial_state(self):
-        if utils.args.env == "Pendulum-v0":
+        if base_utils.args.env == "Pendulum-v0":
             self.env.env.state = [np.pi, 0] 
             theta, thetadot = self.env.env.state
             return np.array([np.cos(theta), np.sin(theta), thetadot])
-        elif utils.args.env == "MountainCarContinuous-v0":
+        elif base_utils.args.env == "MountainCarContinuous-v0":
             self.env.env.state = [-0.50, 0]
             return np.array(self.env.env.state)
 
     def get_obs(self):
-        if utils.args.env == "Pendulum-v0":
+        if base_utils.args.env == "Pendulum-v0":
             theta, thetadot = self.env.env.state
             return np.array([np.cos(theta), np.sin(theta), thetadot])
-        elif utils.args.env == "MountainCarContinuous-v0":
+        elif base_utils.args.env == "MountainCarContinuous-v0":
             return np.array(self.env.env.state)
 
     def learn_policy(self, reward_fn, 
@@ -135,7 +135,7 @@ class CartEntropyPolicy(nn.Module):
             for t in range(train_steps):  # Don't infinite loop while learning
                 action = self.select_action(state)
                 state, _, done, _ = self.env.step(action)
-                reward = reward_fn[tuple(utils.discretize_state(state))]
+                reward = reward_fn[tuple(base_utils.discretize_state(state))]
                 ep_reward += reward
                 self.rewards.append(reward)
                 if done:
@@ -156,11 +156,11 @@ class CartEntropyPolicy(nn.Module):
 
     def execute_internal(self, env, T, state, render):
         print("Simulation starting at = " + str(state))
-        p = np.zeros(shape=(tuple(utils.num_states)))
+        p = np.zeros(shape=(tuple(base_utils.num_states)))
         for t in range(T):  
             action = self.select_action(state)[0]
             state, reward, done, _ = env.step([action])
-            p[tuple(utils.discretize_state(state))] += 1
+            p[tuple(base_utils.discretize_state(state))] += 1
             
             if render:
                 env.render()
@@ -171,7 +171,7 @@ class CartEntropyPolicy(nn.Module):
 
     def execute(self, T, initial_state=[], render=False, video_dir=''):
 
-        p = np.zeros(shape=(tuple(utils.num_states)))
+        p = np.zeros(shape=(tuple(base_utils.num_states)))
 
         if len(initial_state) == 0:
             initial_state = self.env.reset() # get random starting location
@@ -199,7 +199,7 @@ class CartEntropyPolicy(nn.Module):
         return p/float(T)
 
     def execute_random_internal(self, env, T, state, render):
-        p = np.zeros(shape=(tuple(utils.num_states)))
+        p = np.zeros(shape=(tuple(base_utils.num_states)))
         for t in range(T):  
             r = random.random()
             action = -1
@@ -209,7 +209,7 @@ class CartEntropyPolicy(nn.Module):
                 action = 1
 
             state, reward, done, _ = env.step([action])
-            p[tuple(utils.discretize_state(state))] += 1
+            p[tuple(base_utils.discretize_state(state))] += 1
             
             if render:
                 env.render()
@@ -220,7 +220,7 @@ class CartEntropyPolicy(nn.Module):
 
     # TODO: render == True => record videos
     def execute_random(self, T, initial_state=[], render=False, video_dir=''):
-        p = np.zeros(shape=(tuple(utils.num_states)))
+        p = np.zeros(shape=(tuple(base_utils.num_states)))
 
         if len(initial_state) == 0:
             initial_state = self.env.reset() # get random starting location

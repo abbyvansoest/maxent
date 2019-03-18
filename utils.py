@@ -1,4 +1,7 @@
+import cvxpy as cvx
 import numpy as np
+import scipy.stats
+
 import argparse
 import copy
 import sys
@@ -13,23 +16,23 @@ parser.add_argument('--lr', type=float, default=1e-3, metavar='lr',
                     help='learning rate')
 parser.add_argument('--eps', type=float, default=0.05, metavar='eps',
                     help='exploration rate')
-parser.add_argument('--episodes', type=int, default=100, metavar='ep',
+parser.add_argument('--episodes', type=int, default=16, metavar='ep',
                     help='number of episodes per agent')
-parser.add_argument('--epochs', type=int, default=50, metavar='epo',
+parser.add_argument('--epochs', type=int, default=16, metavar='epo',
                     help='number of models to train on entropy rewards')
-parser.add_argument('--T', type=int, default=1000, metavar='T',
+parser.add_argument('--T', type=int, default=10000, metavar='T',
                     help='number of steps to roll out entropy policy')
-parser.add_argument('--n', type=int, default=10, metavar='n',
+parser.add_argument('--n', type=int, default=20, metavar='n',
                     help='number of rollouts to average over')
-parser.add_argument('--env', type=str, default='fake', metavar='env',
+parser.add_argument('--env', type=str, default='test', metavar='env',
                     help='the env to learn')
 
 
 # policy architecture args
 parser.add_argument('--hid', type=int, default=300)
-parser.add_argument('--l', type=int, default=1)
+parser.add_argument('--l', type=int, default=2)
 parser.add_argument('--seed', '-s', type=int, default=-1)
-parser.add_argument('--exp_name', type=str, default='ant_sac')
+parser.add_argument('--exp_name', type=str, default='test')
 
 # saving args
 parser.add_argument('--models_dir', type=str, default='logs/file.out', metavar='N',
@@ -38,18 +41,20 @@ parser.add_argument('--save_models', action='store_true',
                     help='collect a video of the final policy')
 parser.add_argument('--render', action='store_true',
                     help='render the environment')
+parser.add_argument('--record_steps', type=int, default=5000, metavar='rs',
+                    help='number of steps for each video recording')
 
-# gaussian reduction args
+# Gaussian reduction args
 parser.add_argument('--gaussian', action='store_true',
-                    help='reduce dimension with random gaussian')
+                    help='use random Gaussian to reduce state')
 parser.add_argument('--reduce_dim', type=int, default=5, metavar='rd',
-                    help='dimension reduction parameter')
+                    help='dimension of Gaussian')
 
 # run config
-parser.add_argument('--avg_N', type=int, default=20, metavar='aN',
-                    help='unique states visited average runs')
 parser.add_argument('--start_steps', type=int, default=10000, metavar='ss',
                     help='start steps parameter')
+parser.add_argument('--avg_N', type=int, default=1, metavar='aN',
+                    help='unique states visited average runs')
 
 # experimental args
 parser.add_argument('--deterministic', action='store_true',
@@ -79,6 +84,7 @@ parser.add_argument('--fully_corrective', action='store_true',
 
 args = parser.parse_args()
 
+
 if args.autoencode and args.gaussian:
     raise ValueError("must set only one: --autoencode  --gaussian")
 if args.geometric and args.fully_corrective:
@@ -95,4 +101,77 @@ def log_statement(s):
     print(s)
     with open(logfile, 'a') as f:
         f.write(str(s)+'\n')
+
+def proj_unit_simplex(y):
+    '''
+    Returns the point in the simplex a^Tx = 1, x&amp;amp;amp;amp;gt;=0 that is
+     closest to y (according to Euclidian distance)
+    '''
+    d = len(y)
+    a = np.ones(d)
+    # setup the objective and constraints and solve the problem
+    x = cvx.Variable(d)
+    obj = cvx.Minimize(cvx.sum_squares(x - y))
+    constr = [x >= 0, a*x == 1]
+    prob = cvx.Problem(obj, constr)
+    prob.solve()
+ 
+    return np.array(x.value)
+
+def fully_corrective_weights(distributions, eps=1e-3, step=.2):
+    N = len(distributions)    
+    
+    weights = geometric_weights(distributions)
+    prev_weights = np.zeros(N)
+    prev_entropy = 0
+    
+    print('-- Starting gradient descent --')
+    for i in range(100000):
+        weights = proj_unit_simplex(weights)
+        gradients = np.zeros(N)
+        
+        # get the d_mix based on the current weights
+        d_max = np.zeros(shape=(distributions[0].reshape(-1).shape))
+        for w, d in zip(weights, distributions):
+            d_max += np.array(w*d).reshape(-1)
+        
+        log_d_max = np.log(d_max + 1)
+        
+        for idx in range(N):
+            grad_w = -np.sum(distributions[idx].reshape(-1)*log_d_max)
+            gradients[idx] = grad_w
+        
+        entropy = scipy.stats.entropy(d_max)
+        norm =  np.linalg.norm(weights - prev_weights)
+        
+        print('Iteration %d: entropy = %.4f' % (i, entropy))
+        print('weights = %s' % str(weights))
+        print('norm = %.2f' % norm)
+
+        if abs(entropy - prev_entropy) < eps:
+            break
+        if norm < eps:
+            break
+        
+        # Step in the direction of the gradient.
+        prev_weights = weights
+        prev_entropy = entropy
+        weights = weights + step*gradients
+        
+    return weights
+
+def geometric_weights(distributions):
+    weights = [.90**(i+1) for i in range(len(distributions))]
+    return weights
+
+def get_weights(distributions):
+    weights = np.ones(len(distributions))/float(len(distributions)) 
+    if args.fully_corrective:
+        weights = fully_corrective_weights(distributions)
+    elif args.geometric:
+        weights = geometric_weights(distributions)
+    weights = weights / np.sum(weights)
+    print(weights)
+    return weights
+
         

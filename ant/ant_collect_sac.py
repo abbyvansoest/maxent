@@ -6,20 +6,14 @@
 # python ant_collect_sac.py --env="Ant-v2" --exp_name=_discretize_autoencoder_6 --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=30 --autoencode --autoencoder_reduce_dim=6
 
 import sys
-sys.path.append('/home/abbyvs')
-sys.path.append('/home/abbyvs/spinningup')
-
 import os
+sys.path.append(os.getenv("HOME") + '/maxent')
+
 import time
 from datetime import datetime
 import random
 
 import numpy as np
-import cvxpy as cvx
-import scipy.stats
-from scipy.interpolate import interp2d
-from scipy.interpolate import spline
-from scipy.stats import norm
 from tabulate import tabulate
 
 import gym
@@ -126,8 +120,7 @@ def compute_states_visited_xy(env, policies, T, n, N=20, initial_state=[], basel
     return states_visited_xy
 
 def select_action(policies, weights, env, obs):
-    # TODO(abbys): fully-corrective weights for policies
-    
+
     if len(weights) != len(policies):
         print("Weights array is wrong dimension -- using uniform weighting")
         weights = np.ones(len(policies))/float(len(policies))
@@ -135,9 +128,6 @@ def select_action(policies, weights, env, obs):
     indexes = np.arange(len(policies))
     idx = np.random.choice(indexes, p=weights)
     
-    # select random policy uniform distribution
-    # take non-deterministic action for that policy
-#     idx = random.randint(0, len(policies) - 1)
     if idx == 0:
         action = env.action_space.sample()
     else:
@@ -427,6 +417,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
             ac_kwargs=dict(hidden_sizes=[args.hid]*args.l),
             logger_kwargs=logger_kwargs, 
             normalization_factors=normalization_factors)
+
         # The first policy is random
         if i == 0:
             sac.soft_actor_critic(epochs=0) 
@@ -438,9 +429,9 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         
         p, _ = sac.test_agent(T, normalization_factors=normalization_factors)
         distributions.append(p)
-        weights = get_weights(distributions)
+        weights = utils.get_weights(distributions)
 
-        epoch = 'epoch_%02d' % (i)
+        epoch = 'epoch_%02d' % (i) 
         if args.render:
             sac.record(T=2000, n=1, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
             sac.record(T=2000, n=1, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
@@ -581,6 +572,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     plotting.percent_state_space_reached(pct_visited, pct_visited_baseline, ext='_total')
     plotting.percent_state_space_reached(pct_visited_xy, pct_visited_xy_baseline, ext="_xy")
     
+    # TODO: get final weights for the policies. SAve in a pickle file in experiment_directory
     return policies
 
 def main():

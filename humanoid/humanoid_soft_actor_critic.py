@@ -1,7 +1,7 @@
 # Code derived from: https://spinningup.openai.com/en/latest/algorithms/sac.html
 import sys
-sys.path.append('/home/abbyvs')
-sys.path.append('/home/abbyvs/spinningup')
+import os
+sys.path.append(os.getenv("HOME") + '/maxent')
 
 import numpy as np
 import tensorflow as tf

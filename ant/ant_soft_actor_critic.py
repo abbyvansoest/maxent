@@ -1,8 +1,9 @@
 # Code derived from: https://spinningup.openai.com/en/latest/algorithms/sac.html
 
 import sys
-sys.path.append('/home/abbyvs')
-sys.path.append('/home/abbyvs/spinningup')
+import os
+# sys.path.append('/home/abbyvs')
+sys.path.append(os.getenv("HOME")+'/maxent')
 
 import numpy as np
 import tensorflow as tf
@@ -67,17 +68,20 @@ class AntSoftActorCritic:
     def var_scope(self, var):
         return self.main_scope + '/' + var
 
-    def __init__(self, env_fn, reward_fn=[], actor_critic=core.mlp_actor_critic, xid=0, seed=0, max_ep_len=1000,
-        gamma=.99, alpha=0.2, lr=1e-3, polyak=0.995, replay_size=int(1e6), 
-        ac_kwargs=dict(), logger_kwargs=dict(), normalization_factors=[], learn_reduced=False):
+    def __init__(self, env_fn, reward_fn=[], actor_critic=core.mlp_actor_critic, 
+        xid=0, seed=0, max_ep_len=1000, gamma=.99, alpha=0.2, 
+        lr=1e-3, polyak=0.995, replay_size=int(1e6), ac_kwargs=dict(), 
+        logger_kwargs=dict(), normalization_factors=[], learn_reduced=False):
 
         tf.set_random_seed(seed)
         np.random.seed(seed)
 
+        self.xid = xid
         self.main_scope = 'main' + str(xid)
         self.target_scope = 'target' + str(xid)
 
         self.logger = EpochLogger(**logger_kwargs)
+        self.logger.save_config(logger_kwargs)
 
         self.max_ep_len = max_ep_len
         self.reward_fn = reward_fn
@@ -156,7 +160,6 @@ class AntSoftActorCritic:
             self.sess.run(tf.global_variables_initializer())
             self.sess.run(target_init)
 
-
     def reward(self, env, r, o):
         if len(self.reward_fn) == 0:
             return r
@@ -180,6 +183,7 @@ class AntSoftActorCritic:
             return self.sess.run(self.std, feed_dict={self.x_ph: o.reshape(1,-1)})[0]
 
     def test_agent(self, T, n=10, initial_state=[], normalization_factors=[], store_log=True, deterministic=True, reset=False):
+        
         denom = 0
         
         p = np.zeros(shape=(tuple(ant_utils.num_states)))
@@ -331,8 +335,8 @@ class AntSoftActorCritic:
                 use the learned policy. 
                 """
                 if t > start_steps:
-                    if t == start_steps + 1:
-                        print("!!!! using policy !!!!")
+                    # if t == start_steps + 1:
+                    #     print("!!!! using policy !!!!")
                     a = self.get_action(o)
                 else:
                     a = self.env.action_space.sample()
@@ -392,7 +396,6 @@ class AntSoftActorCritic:
                 # End of epoch wrap-up
                 if t > 0 and t % steps_per_epoch == 0:
                     epoch = t // steps_per_epoch
-
                     # Save model
                     if (epoch % save_freq == 0) or (epoch == epochs-1):
                         self.logger.save_state({'env': self.env}, None)
