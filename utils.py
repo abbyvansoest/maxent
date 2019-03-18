@@ -161,7 +161,8 @@ def fully_corrective_weights(distributions, eps=1e-3, step=.2):
     return weights
 
 def geometric_weights(distributions):
-    weights = [.90**(i+1) for i in range(len(distributions))]
+    N = len(distributions)
+    weights = [.90**(N-i) for i in range(N)]
     return weights
 
 def get_weights(distributions):

@@ -73,7 +73,8 @@ def get_state(env, obs, wrapped=False):
         raise ValueError("state and observation are not equal")
     return state
 
-def compute_states_visited_xy(env, policies, T, n, N=20, initial_state=[], baseline=False):
+def compute_states_visited_xy(env, policies, T, n, norm=[],
+                              N=20, initial_state=[], baseline=False):
     
     states_visited_xy = np.zeros(T*n)
     max_idx = len(policies) - 1
@@ -494,9 +495,8 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
             # average over a whole bunch of rollouts
             # slow: so only do this when needed.
             print("Averaging unique xy states visited....")
-            states_visited_xy = compute_states_visited_xy(env, policies, T=T, n=args.n, N=args.avg_N)
-            states_visited_xy_baseline = compute_states_visited_xy(env, policies, 
-                                                                   T=T, n=args.n, N=args.avg_N, 
+            states_visited_xy = compute_states_visited_xy(env, policies, norm=normalization_factors, T=T, n=args.n, N=args.avg_N)
+            states_visited_xy_baseline = compute_states_visited_xy(env, policies, norm=normalization_factors, T=T, n=args.n, N=args.avg_N, 
                                                                    initial_state=initial_state, 
                                                                    baseline=True)
             states_visited_cumulative.append(states_visited_xy)
