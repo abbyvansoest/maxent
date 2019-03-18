@@ -14,10 +14,6 @@ from datetime import datetime
 import random
 
 import numpy as np
-import scipy.stats
-from scipy.interpolate import interp2d
-from scipy.interpolate import spline
-from scipy.stats import norm
 from tabulate import tabulate
 
 import gym
@@ -123,11 +119,15 @@ def compute_states_visited_xy(env, policies, T, n, N=20, initial_state=[], basel
     states_visited_xy /= float(N)
     return states_visited_xy
 
-def select_action(policies, env, obs):
+def select_action(policies, weights, env, obs):
     
-    # select random policy uniform distribution
-    # take non-deterministic action for that policy
-    idx = random.randint(0, len(policies) - 1)
+    if len(weights) != len(policies):
+        print("Weights array is wrong dimension -- using uniform weighting")
+        weights = np.ones(len(policies))/float(len(policies))
+    
+    indexes = np.arange(len(policies))
+    idx = np.random.choice(indexes, p=weights)
+    
     if idx == 0:
         action = env.action_space.sample()
     else:
@@ -135,7 +135,7 @@ def select_action(policies, env, obs):
     
     return action
 
-def execute_one_rollout(policies, env, start_obs, T, data, norm, wrapped=False):
+def execute_one_rollout(policies, weights, env, start_obs, T, data, norm, wrapped=False):
     obs = start_obs
     
     p, p_xy, cumulative_states_visited, states_visited, \
@@ -145,7 +145,7 @@ def execute_one_rollout(policies, env, start_obs, T, data, norm, wrapped=False):
     
     for t in range(T):
             
-        action = select_action(policies, env, obs)
+        action = select_action(policies, weights, env, obs)
         
         # Count the cumulative number of new states visited as a function of t.
         obs, _, done, _ = env.step(action)
@@ -177,7 +177,7 @@ def execute_one_rollout(policies, env, start_obs, T, data, norm, wrapped=False):
     return data
                 
 # run a simulation to see how the average policy behaves.
-def execute_average_policy(env, policies, T,
+def execute_average_policy(env, policies, T, weights,
                            reward_fn=[], norm=[], initial_state=[], 
                            n=10, render=False, video_dir='', epoch=0):
     
@@ -213,10 +213,10 @@ def execute_average_policy(env, policies, T,
             qvel = initial_state[len(ant_utils.qpos):]
             wrapped_env.unwrapped.set_state(qpos, qvel)
             obs = get_state(wrapped_env, wrapped_env.unwrapped._get_obs(), wrapped=True)
-            data = execute_one_rollout(policies, wrapped_env, obs, T=2000, data=data, norm=norm, wrapped=True)
+            data = execute_one_rollout(policies, weights, wrapped_env, obs, T=2000, data=data, norm=norm, wrapped=True)
         else:
             obs = get_state(env, env.env._get_obs())
-            data = execute_one_rollout(policies, env, obs, T, data, norm)
+            data = execute_one_rollout(policies, weights, env, obs, T, data, norm)
     
     env.close()
     
@@ -299,6 +299,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     avg_ps_baseline_xy = []
 
     policies = []
+    distributions = []
     initial_state = init_state(env)
     
     prebuf = ExperienceBuffer()
@@ -350,6 +351,10 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
                               start_steps=args.start_steps) 
         policies.append(sac)
 
+        p, _ = sac.test_agent(T, normalization_factors=normalization_factors)
+        distributions.append(p)
+        weights = utils.get_weights(distributions)
+
         epoch = 'epoch_%02d' % (i) 
         if args.render:
             sac.record(T=2000, n=1, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
@@ -365,7 +370,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         # Estimate distribution and entropy.
         print("Executing mixed policy...")
         average_p, average_p_xy, initial_state, states_visited, states_visited_xy = \
-            execute_average_policy(env, policies, T,
+            execute_average_policy(env, policies, T, weights,
                                    reward_fn=reward_fn, norm=normalization_factors, 
                                    initial_state=initial_state, n=args.n, 
                                    render=args.render, video_dir=video_dir+'/mixed/'+epoch, epoch=i)
