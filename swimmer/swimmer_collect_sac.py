@@ -31,15 +31,23 @@ args = utils.get_args()
 
 from spinup.utils.run_utils import setup_logger_kwargs
 
-def select_action(policies, env, obs):
-    idx = random.randint(0, len(policies) - 1)
+def select_action(policies, weights, env, obs):
+    
+    if len(weights) != len(policies):
+        print("Weights array is wrong dimension -- using uniform weighting")
+        weights = np.ones(len(policies))/float(len(policies))
+    
+    indexes = np.arange(len(policies))
+    idx = np.random.choice(indexes, p=weights)
+    
+    
     if idx == 0:
         action = env.action_space.sample()
     else:
         action = policies[idx].get_action(obs, deterministic=args.deterministic)
     return action
 
-def execute_one_rollout(policies, env, obs, T, data, video_dir='', wrapped=False):
+def execute_one_rollout(policies, weights, env, obs, T, data, video_dir='', wrapped=False):
 
     state_data, p_xy, random_initial_state = data
     random_T = np.floor(random.random()*T)
@@ -48,11 +56,9 @@ def execute_one_rollout(policies, env, obs, T, data, video_dir='', wrapped=False
     uid = 1
     t = 0
     while (t < T) and not done:
-        if t % 1000 == 0:
-            print(t)
         t = t + 1
 
-        action = select_action(policies, env, obs)
+        action = select_action(policies, weights, env, obs)
         
         # Count the cumulative number of new states visited as a function of t.
         obs, _, done, _ = env.step(action)
@@ -77,13 +83,12 @@ def execute_one_rollout(policies, env, obs, T, data, video_dir='', wrapped=False
                 env.unwrapped.set_state(qpos, qvel)
                 d = False
 
-    print("total rollout steps: %d" % t)
     p_xy /= float(t)
     data = (state_data, p_xy, random_initial_state)
     return data
                 
 # run a simulation to see how the average policy behaves.
-def execute_average_policy(env, policies, T, initial_state=[], n=10, render=False, video_dir='', epoch=0):
+def execute_average_policy(env, policies, T, weights=[], initial_state=[], n=10, render=False, video_dir='', epoch=0):
        
     state_data = []
     random_initial_state = []
@@ -93,8 +98,6 @@ def execute_average_policy(env, policies, T, initial_state=[], n=10, render=Fals
 
     # average results over n rollouts
     for iteration in range(n):
-
-        print('---- ' + str(iteration)+ ' ----')
         
         env.reset()
         
@@ -112,12 +115,12 @@ def execute_average_policy(env, policies, T, initial_state=[], n=10, render=Fals
             wrapped_env.unwrapped.set_state(qpos, qvel)
             obs = swimmer_utils.get_state(wrapped_env, \
                                            wrapped_env.unwrapped._get_obs(), wrapped=True)
-            data = execute_one_rollout(policies, wrapped_env, obs, \
+            data = execute_one_rollout(policies, weights, wrapped_env, obs, \
                                        T=args.record_steps, data=data, \
                                        video_dir=video_dir, wrapped=True)
         else:
             obs = swimmer_utils.get_state(env, env.env._get_obs())
-            data = execute_one_rollout(policies, env, obs, T, data)
+            data = execute_one_rollout(policies, weights, env, obs, T, data)
             
     env.close()
     
@@ -166,6 +169,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     avg_ps_baseline_xy = []
 
     policies = []
+    distributions = []
     initial_state = []
 
     # initial reward function = all ones
@@ -203,6 +207,10 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
                                   start_steps=args.start_steps) 
         policies.append(sac)
         
+        p_xy = sac.test_agent(T)
+        distributions.append(p_xy)
+        weights = utils.get_weights(distributions)
+        
         epoch = 'epoch_%02d' % (i)
         if args.render:
             print('Collecting videos....') 
@@ -212,10 +220,10 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         # Execute the cumulative average policy thus far.
         # Estimate distribution and entropy.
         print("Executing mixed policy...")
-        data, average_p_xy, initial_state = execute_average_policy(env, policies, T,
-                                           initial_state=initial_state, n=args.n, 
-                                           render=args.render, video_dir=video_dir+'/mixed/'+epoch, epoch=i)
-        test_data,_,_ = execute_average_policy(env, policies, T=2000,
+        data, average_p_xy, initial_state = execute_average_policy(env, policies, T, weights, 
+                                                                   initial_state=initial_state, n=args.n, render=args.render, 
+                                                                   video_dir=video_dir+'/mixed/'+epoch, epoch=i)
+        test_data,_,_ = execute_average_policy(env, policies, T=2000, weights=weights,
                                                initial_state=initial_state, n=1, 
                                                render=False, epoch=i)
         
