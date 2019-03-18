@@ -5,6 +5,7 @@
 import sys
 import os
 sys.path.append(os.getenv("HOME")+'/maxent')
+sys.path.append(os.getenv("HOME") + '/spinningup')
 
 import os
 import time

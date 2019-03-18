@@ -8,6 +8,7 @@
 import sys
 import os
 sys.path.append(os.getenv("HOME") + '/maxent')
+sys.path.append(os.getenv("HOME") + '/spinningup')
 
 import time
 from datetime import datetime
