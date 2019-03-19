@@ -242,7 +242,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         # compute rewards
         # update reward function
         print("Update reward function")
-        reward_fn = RewardFn(data, eps=.001)
+        reward_fn = RewardFn(data, n_components=8, eps=.001)
         reward_fn.test(test_data, env)
 
         # (save for plotting)

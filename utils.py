@@ -172,7 +172,7 @@ def get_weights(distributions):
         weights = fully_corrective_weights(distributions)
     elif args.geometric:
         weights = geometric_weights(distributions)
-    weights = weights / np.sum(weights)
+    weights = np.absolute(weights / np.sum(weights))
     print(weights)
     return weights
 
