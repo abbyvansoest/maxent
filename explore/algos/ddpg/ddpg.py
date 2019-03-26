@@ -1,9 +1,10 @@
+import random
 import numpy as np
 import tensorflow as tf
 import gym
 import time
-from spinup.algos.ddpg import core
-from spinup.algos.ddpg.core import get_vars
+from algos.ddpg import core
+from algos.ddpg.core import get_vars
 from spinup.utils.logx import EpochLogger
 
 
@@ -45,9 +46,9 @@ Deep Deterministic Policy Gradient (DDPG)
 def ddpg(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0, 
          steps_per_epoch=5000, epochs=100, replay_size=int(1e6), gamma=0.99, 
          polyak=0.995, pi_lr=1e-3, q_lr=1e-3, batch_size=100, start_steps=10000, 
-         act_noise=0.1, max_ep_len=1000, logger_kwargs=dict(), save_freq=1):
+         act_noise=0.1, max_ep_len=1000, logger_kwargs=dict(), save_freq=1,
+         explorer=None, eps=0.0):
     """
-
     Args:
         env_fn : A function which creates a copy of the environment.
             The environment must satisfy the OpenAI Gym API.
@@ -209,6 +210,10 @@ def ddpg(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
             a = get_action(o, act_noise)
         else:
             a = env.action_space.sample()
+        
+        if random.random() < eps and explorer is not None:
+            state = env.env.state_vector()
+            a = explorer.sample_action(state)
 
         # Step the env
         o2, r, d, _ = env.step(a)

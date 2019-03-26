@@ -12,8 +12,6 @@ def restore_tf_graph(sess, fpath):
             )
 
     model_info = joblib.load(os.path.join(fpath, 'model_info.pkl'))
-    print(model_info)
-
     graph = tf.get_default_graph()
     model = dict()
     model.update({k: graph.get_tensor_by_name(v) for k,v in model_info['inputs'].items()})

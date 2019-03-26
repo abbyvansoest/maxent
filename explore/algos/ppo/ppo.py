@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 import gym
 import time
-import spinup.algos.ppo.core as core
+import algos.ppo.core as core
 from spinup.utils.logx import EpochLogger
 from spinup.utils.mpi_tf import MpiAdamOptimizer, sync_all_params
 from spinup.utils.mpi_tools import mpi_avg, proc_id, mpi_statistics_scalar, num_procs

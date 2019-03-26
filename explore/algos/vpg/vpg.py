@@ -1,8 +1,9 @@
+import random
 import numpy as np
 import tensorflow as tf
 import gym
 import time
-import spinup.algos.vpg.core as core
+import algos.vpg.core as core
 from spinup.utils.logx import EpochLogger
 from spinup.utils.mpi_tf import MpiAdamOptimizer, sync_all_params
 from spinup.utils.mpi_tools import mpi_fork, mpi_avg, proc_id, mpi_statistics_scalar, num_procs
@@ -92,7 +93,7 @@ Vanilla Policy Gradient
 def vpg(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0, 
         steps_per_epoch=4000, epochs=50, gamma=0.99, pi_lr=3e-4,
         vf_lr=1e-3, train_v_iters=80, lam=0.97, max_ep_len=1000,
-        logger_kwargs=dict(), save_freq=10):
+        logger_kwargs=dict(), save_freq=10, explorer=None, eps=0.05):
     """
 
     Args:
@@ -232,6 +233,10 @@ def vpg(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
     for epoch in range(epochs):
         for t in range(local_steps_per_epoch):
             a, v_t, logp_t = sess.run(get_action_ops, feed_dict={x_ph: o.reshape(1,-1)})
+            
+            if random.random() < eps and explorer is not None:
+                state = env.env.state_vector()
+                a = explorer.sample_action(state)
 
             # save and log
             buf.store(o, a, r, v_t, logp_t)
