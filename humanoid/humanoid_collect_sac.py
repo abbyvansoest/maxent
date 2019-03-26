@@ -182,7 +182,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         else:
             utils.log_statement(initial_state)
 
-        logger_kwargs = setup_logger_kwargs("model%02d" + i, data_dir=experiment_directory)
+        logger_kwargs = setup_logger_kwargs("model%02d" % i, data_dir=experiment_directory)
 
         # Learn policy that maximizes current reward function.
         print("Learning new oracle...")
