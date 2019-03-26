@@ -40,7 +40,6 @@ def select_action(policies, weights, env, obs):
     indexes = np.arange(len(policies))
     idx = np.random.choice(indexes, p=weights)
     
-    
     if idx == 0:
         action = env.action_space.sample()
     else:
@@ -98,7 +97,7 @@ def execute_average_policy(env, policies, T, weights=[], initial_state=[], n=10,
 
     # average results over n rollouts
     for iteration in range(n):
-        
+        print(iteration)
         env.reset()
         
         if len(initial_state) == 0:
@@ -125,12 +124,9 @@ def execute_average_policy(env, policies, T, weights=[], initial_state=[], n=10,
     env.close()
     
     state_data, p_xy, random_initial_state = data
-    print('Sum = %f' % (np.sum(p_xy)))
-
     return state_data, p_xy, random_initial_state
 
 def entropy(pt):
-    utils.log_statement("pt size %d" % pt.size)
     entropy = 0.0
     for p in pt:
         if p == 0.0:
@@ -184,7 +180,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         else:
             utils.log_statement(initial_state)
 
-        logger_kwargs = setup_logger_kwargs("model" + str(i), data_dir=experiment_directory)
+        logger_kwargs = setup_logger_kwargs("model%02d" % i, data_dir=experiment_directory)
 
         # Learn policy that maximizes current reward function.
         print("Learning new oracle...")

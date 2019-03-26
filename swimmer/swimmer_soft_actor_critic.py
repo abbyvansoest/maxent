@@ -230,7 +230,6 @@ class SwimmerSoftActorCritic:
                     d = False
         
         p_xy /= float(denom)
-        
         return p_xy, states_visited_xy_baseline
 
     # record film of policy

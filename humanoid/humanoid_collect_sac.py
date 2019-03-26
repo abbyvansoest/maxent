@@ -1,6 +1,6 @@
 # Collect entropy-based reward policies.
 
-# python humanoid_collect_sac.py --env="Humanoid-v2" --exp_name=test --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=16
+# python humanoid_collect_sac.py --env="Humanoid-v2" --exp_name=replicate --T=100000 --n=20 --l=2 --hid=300 --epochs=30 --episodes=30 --fully_corrective
 
 import sys
 import os
@@ -182,7 +182,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         else:
             utils.log_statement(initial_state)
 
-        logger_kwargs = setup_logger_kwargs("model" + str(i), data_dir=experiment_directory)
+        logger_kwargs = setup_logger_kwargs("model%02d" + i, data_dir=experiment_directory)
 
         # Learn policy that maximizes current reward function.
         print("Learning new oracle...")
