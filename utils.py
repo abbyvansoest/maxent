@@ -44,7 +44,7 @@ parser.add_argument('--render', action='store_true',
 parser.add_argument('--record_steps', type=int, default=5000, metavar='rs',
                     help='number of steps for each video recording')
 
-# Gaussian reduction args
+# Gaussian reduction args -- for Ant
 parser.add_argument('--gaussian', action='store_true',
                     help='use random Gaussian to reduce state')
 parser.add_argument('--reduce_dim', type=int, default=5, metavar='rd',
@@ -172,8 +172,9 @@ def get_weights(distributions):
         weights = fully_corrective_weights(distributions)
     elif args.geometric:
         weights = geometric_weights(distributions)
-    weights = np.absolute(weights / np.sum(weights))
+    weights = np.absolute(weights) / weights.sum()
     print(weights)
+    print(weights.sum())
     return weights
 
         

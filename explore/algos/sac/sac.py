@@ -1,3 +1,4 @@
+import random
 import numpy as np
 import tensorflow as tf
 import gym
@@ -47,87 +48,8 @@ Soft Actor-Critic
 def sac(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0, 
         steps_per_epoch=5000, epochs=100, replay_size=int(1e6), gamma=0.99, 
         polyak=0.995, lr=1e-3, alpha=0.2, batch_size=100, start_steps=10000, 
-        max_ep_len=1000, logger_kwargs=dict(), save_freq=1):
-    """
-
-    Args:
-        env_fn : A function which creates a copy of the environment.
-            The environment must satisfy the OpenAI Gym API.
-
-        actor_critic: A function which takes in placeholder symbols 
-            for state, ``x_ph``, and action, ``a_ph``, and returns the main 
-            outputs from the agent's Tensorflow computation graph:
-
-            ===========  ================  ======================================
-            Symbol       Shape             Description
-            ===========  ================  ======================================
-            ``mu``       (batch, act_dim)  | Computes mean actions from policy
-                                           | given states.
-            ``pi``       (batch, act_dim)  | Samples actions from policy given 
-                                           | states.
-            ``logp_pi``  (batch,)          | Gives log probability, according to
-                                           | the policy, of the action sampled by
-                                           | ``pi``. Critical: must be differentiable
-                                           | with respect to policy parameters all
-                                           | the way through action sampling.
-            ``q1``       (batch,)          | Gives one estimate of Q* for 
-                                           | states in ``x_ph`` and actions in
-                                           | ``a_ph``.
-            ``q2``       (batch,)          | Gives another estimate of Q* for 
-                                           | states in ``x_ph`` and actions in
-                                           | ``a_ph``.
-            ``q1_pi``    (batch,)          | Gives the composition of ``q1`` and 
-                                           | ``pi`` for states in ``x_ph``: 
-                                           | q1(x, pi(x)).
-            ``q2_pi``    (batch,)          | Gives the composition of ``q2`` and 
-                                           | ``pi`` for states in ``x_ph``: 
-                                           | q2(x, pi(x)).
-            ``v``        (batch,)          | Gives the value estimate for states
-                                           | in ``x_ph``. 
-            ===========  ================  ======================================
-
-        ac_kwargs (dict): Any kwargs appropriate for the actor_critic 
-            function you provided to SAC.
-
-        seed (int): Seed for random number generators.
-
-        steps_per_epoch (int): Number of steps of interaction (state-action pairs) 
-            for the agent and the environment in each epoch.
-
-        epochs (int): Number of epochs to run and train agent.
-
-        replay_size (int): Maximum length of replay buffer.
-
-        gamma (float): Discount factor. (Always between 0 and 1.)
-
-        polyak (float): Interpolation factor in polyak averaging for target 
-            networks. Target networks are updated towards main networks 
-            according to:
-
-            .. math:: \\theta_{\\text{targ}} \\leftarrow 
-                \\rho \\theta_{\\text{targ}} + (1-\\rho) \\theta
-
-            where :math:`\\rho` is polyak. (Always between 0 and 1, usually 
-            close to 1.)
-
-        lr (float): Learning rate (used for both policy and value learning).
-
-        alpha (float): Entropy regularization coefficient. (Equivalent to 
-            inverse of reward scale in the original SAC paper.)
-
-        batch_size (int): Minibatch size for SGD.
-
-        start_steps (int): Number of steps for uniform-random action selection,
-            before running real policy. Helps exploration.
-
-        max_ep_len (int): Maximum length of trajectory / episode / rollout.
-
-        logger_kwargs (dict): Keyword args for EpochLogger.
-
-        save_freq (int): How often (in terms of gap between epochs) to save
-            the current policy and value function.
-
-    """
+        max_ep_len=1000, logger_kwargs=dict(), save_freq=1,
+        explorer=None, eps=.03, pretrain_epochs=0):
 
     logger = EpochLogger(**logger_kwargs)
     logger.save_config(locals())
@@ -230,20 +152,27 @@ def sac(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
 
     start_time = time.time()
     o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
-    total_steps = steps_per_epoch * epochs
+    
+    pretrain_steps = steps_per_epoch*pretrain_epochs
+    total_epochs = epochs + pretrain_epochs
+    total_steps = steps_per_epoch * total_epochs
 
     # Main loop: collect experience in env and update/log each epoch
     for t in range(total_steps):
 
-        """
-        Until start_steps have elapsed, randomly sample actions
-        from a uniform distribution for better exploration. Afterwards, 
-        use the learned policy. 
-        """
         if t > start_steps:
             a = get_action(o)
-        else:
+        elif pretrain_steps == 0: # only explore if not pretraining with MaxEnt
             a = env.action_space.sample()
+            
+        # use MaxEnt exploration if you are in a pretrain epoch or if eps-greedy
+        pre = t < pretrain_steps
+        during = random.random() < eps
+        if pre or during:
+            if explorer is None:
+                raise ValueError('Trying to explore but explorer is None')
+            state = env.env.state_vector()
+            a = explorer.sample_action(state)
 
         # Step the env
         o2, r, d, _ = env.step(a)

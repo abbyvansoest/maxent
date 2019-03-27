@@ -93,7 +93,8 @@ with early stopping based on approximate KL
 def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0, 
         steps_per_epoch=4000, epochs=50, gamma=0.99, clip_ratio=0.2, pi_lr=3e-4,
         vf_lr=1e-3, train_pi_iters=80, train_v_iters=80, lam=0.97, max_ep_len=1000,
-        target_kl=0.01, logger_kwargs=dict(), save_freq=10, explorer=None, eps=.03):
+        target_kl=0.01, logger_kwargs=dict(), save_freq=10, 
+        explorer=None, eps=.03, pretrain_epochs=0):
 
     logger = EpochLogger(**logger_kwargs)
     logger.save_config(locals())
@@ -179,14 +180,20 @@ def ppo(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
 
     start_time = time.time()
     o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
-
+    
+    total_epochs = epochs+pretrain_epochs
+    
     # Main loop: collect experience in env and update/log each epoch
-    for epoch in range(epochs):
+    for epoch in range(total_epochs):
         for t in range(local_steps_per_epoch):
             a, v_t, logp_t = sess.run(get_action_ops, feed_dict={x_ph: o.reshape(1,-1)})
 
-            # take an action sampled from the maxent expert eps percent of the time.
-            if random.random() < eps and explorer is not None:
+            # explore if you are in a pretrain epoch or if eps-greedy
+            pre = epoch < pretrain_epochs
+            during = random.random() < eps
+            if pre or during:
+                if explorer is None:
+                    raise ValueError('Trying to explore but explorer is None')
                 state = env.env.state_vector()
                 a = explorer.sample_action(state)
 

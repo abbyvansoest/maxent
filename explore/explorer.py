@@ -61,10 +61,11 @@ class Explorer:
 
             _, get_action = load_policy(cur_dir)
             self.get_actions.append(get_action)
+        print('Total policies = %d' % len(self.get_actions))
 
     def sample_action(self, obs):
-        idx = random.randint(0, len(self.get_actions)-1)
-        if idx == 0:
+        idx = random.randint(0, len(self.get_actions))
+        if idx == len(self.get_actions):
             action = self.env.action_space.sample()
         else:
             action = self.get_actions[idx](obs)

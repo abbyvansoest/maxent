@@ -47,73 +47,7 @@ def ddpg(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
          steps_per_epoch=5000, epochs=100, replay_size=int(1e6), gamma=0.99, 
          polyak=0.995, pi_lr=1e-3, q_lr=1e-3, batch_size=100, start_steps=10000, 
          act_noise=0.1, max_ep_len=1000, logger_kwargs=dict(), save_freq=1,
-         explorer=None, eps=0.0):
-    """
-    Args:
-        env_fn : A function which creates a copy of the environment.
-            The environment must satisfy the OpenAI Gym API.
-
-        actor_critic: A function which takes in placeholder symbols 
-            for state, ``x_ph``, and action, ``a_ph``, and returns the main 
-            outputs from the agent's Tensorflow computation graph:
-
-            ===========  ================  ======================================
-            Symbol       Shape             Description
-            ===========  ================  ======================================
-            ``pi``       (batch, act_dim)  | Deterministically computes actions
-                                           | from policy given states.
-            ``q``        (batch,)          | Gives the current estimate of Q* for 
-                                           | states in ``x_ph`` and actions in
-                                           | ``a_ph``.
-            ``q_pi``     (batch,)          | Gives the composition of ``q`` and 
-                                           | ``pi`` for states in ``x_ph``: 
-                                           | q(x, pi(x)).
-            ===========  ================  ======================================
-
-        ac_kwargs (dict): Any kwargs appropriate for the actor_critic 
-            function you provided to DDPG.
-
-        seed (int): Seed for random number generators.
-
-        steps_per_epoch (int): Number of steps of interaction (state-action pairs) 
-            for the agent and the environment in each epoch.
-
-        epochs (int): Number of epochs to run and train agent.
-
-        replay_size (int): Maximum length of replay buffer.
-
-        gamma (float): Discount factor. (Always between 0 and 1.)
-
-        polyak (float): Interpolation factor in polyak averaging for target 
-            networks. Target networks are updated towards main networks 
-            according to:
-
-            .. math:: \\theta_{\\text{targ}} \\leftarrow 
-                \\rho \\theta_{\\text{targ}} + (1-\\rho) \\theta
-
-            where :math:`\\rho` is polyak. (Always between 0 and 1, usually 
-            close to 1.)
-
-        pi_lr (float): Learning rate for policy.
-
-        q_lr (float): Learning rate for Q-networks.
-
-        batch_size (int): Minibatch size for SGD.
-
-        start_steps (int): Number of steps for uniform-random action selection,
-            before running real policy. Helps exploration.
-
-        act_noise (float): Stddev for Gaussian exploration noise added to 
-            policy at training time. (At test time, no noise is added.)
-
-        max_ep_len (int): Maximum length of trajectory / episode / rollout.
-
-        logger_kwargs (dict): Keyword args for EpochLogger.
-
-        save_freq (int): How often (in terms of gap between epochs) to save
-            the current policy and value function.
-
-    """
+         explorer=None, eps=0.0, pretrain_epochs=0):
 
     logger = EpochLogger(**logger_kwargs)
     logger.save_config(locals())
@@ -196,22 +130,30 @@ def ddpg(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
 
     start_time = time.time()
     o, r, d, ep_ret, ep_len = env.reset(), 0, False, 0, 0
-    total_steps = steps_per_epoch * epochs
+    
+    pretrain_steps = steps_per_epoch*pretrain_epochs
+    total_epochs = epochs + pretrain_epochs
+    total_steps = steps_per_epoch * total_epochs
 
     # Main loop: collect experience in env and update/log each epoch
     for t in range(total_steps):
 
         """
         Until start_steps have elapsed, randomly sample actions
-        from a uniform distribution for better exploration. Afterwards, 
-        use the learned policy (with some noise, via act_noise). 
+        from a uniform distribution for better exploration. Only use this exploration if you aren't pre-training with
+        the MaxEnt agent. Afterwards, use the learned policy (with some noise, via act_noise). 
         """
         if t > start_steps:
             a = get_action(o, act_noise)
-        else:
+        elif pretrain_steps == 0: # only explore if not pretraining with MaxEnt
             a = env.action_space.sample()
-        
-        if random.random() < eps and explorer is not None:
+            
+        # use MaxEnt exploration if you are in a pretrain epoch or if eps-greedy
+        pre = t < pretrain_steps
+        during = random.random() < eps
+        if pre or during:
+            if explorer is None:
+                raise ValueError('Trying to explore but explorer is None')
             state = env.env.state_vector()
             a = explorer.sample_action(state)
 
