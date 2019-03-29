@@ -1,0 +1,182 @@
+{
+    "ac_kwargs":	{
+        "hidden_sizes":	[
+            64,
+            64
+        ]
+    },
+    "act_noise":	0.1,
+    "actor_critic":	"mlp_actor_critic",
+    "batch_size":	100,
+    "env_fn":	"<function <lambda> at 0x7f526dceba60>",
+    "epochs":	500,
+    "eps":	0.05,
+    "exp_name":	"fully_corrective_eps05",
+    "explorer":	{
+        "<explorer.Explorer object at 0x7f526dcedef0>":	{
+            "env":	{
+                "<TimeLimit<AntEnv<Ant-v2>>>":	{
+                    "_elapsed_steps":	0,
+                    "_episode_started_at":	null,
+                    "_max_episode_seconds":	null,
+                    "_max_episode_steps":	1000,
+                    "action_space":	{
+                        "Box(8,)":	{
+                            "dtype":	"float32",
+                            "high":	"[1. 1. 1. 1. 1. 1. 1. 1.]",
+                            "low":	"[-1. -1. -1. -1. -1. -1. -1. -1.]",
+                            "np_random":	"<mtrand.RandomState object at 0x7f5283559a20>",
+                            "shape":	[
+                                8
+                            ]
+                        }
+                    },
+                    "env":	{
+                        "<AntEnv<Ant-v2>>":	{
+                            "_ezpickle_args":	[],
+                            "_ezpickle_kwargs":	{},
+                            "_viewers":	{},
+                            "action_space":	{
+                                "Box(8,)":	{
+                                    "dtype":	"float32",
+                                    "high":	"[1. 1. 1. 1. 1. 1. 1. 1.]",
+                                    "low":	"[-1. -1. -1. -1. -1. -1. -1. -1.]",
+                                    "np_random":	"<mtrand.RandomState object at 0x7f5283559a20>",
+                                    "shape":	[
+                                        8
+                                    ]
+                                }
+                            },
+                            "data":	"<mujoco_py.cymj.PyMjData object at 0x55bedb4755e8>",
+                            "frame_skip":	5,
+                            "init_qpos":	"[0.   0.   0.75 1.   0.   0.   0.   0.   0.   0.   0.   0.   0.   0.\n 0.  ]",
+                            "init_qvel":	"[0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]",
+                            "metadata":	{
+                                "render.modes":	[
+                                    "human",
+                                    "rgb_array",
+                                    "depth_array"
+                                ],
+                                "video.frames_per_second":	20
+                            },
+                            "model":	"<mujoco_py.cymj.PyMjModel object at 0x55beda630978>",
+                            "np_random":	"<mtrand.RandomState object at 0x7f5283559af8>",
+                            "obs_dim":	111,
+                            "observation_space":	{
+                                "Box(111,)":	{
+                                    "dtype":	"float32",
+                                    "high":	"[inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf]",
+                                    "low":	"[-inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf]",
+                                    "np_random":	"<mtrand.RandomState object at 0x7f5283559ab0>",
+                                    "shape":	[
+                                        111
+                                    ]
+                                }
+                            },
+                            "sim":	"<mujoco_py.cymj.MjSim object at 0x7f5283509598>",
+                            "spec":	{
+                                "EnvSpec(Ant-v2)":	{
+                                    "_entry_point":	"gym.envs.mujoco:AntEnv",
+                                    "_env_name":	"Ant",
+                                    "_kwargs":	{},
+                                    "_local_only":	false,
+                                    "id":	"Ant-v2",
+                                    "max_episode_seconds":	null,
+                                    "max_episode_steps":	1000,
+                                    "nondeterministic":	false,
+                                    "reward_threshold":	6000.0,
+                                    "tags":	{
+                                        "wrapper_config.TimeLimit.max_episode_steps":	1000
+                                    },
+                                    "trials":	100
+                                }
+                            },
+                            "viewer":	null
+                        }
+                    },
+                    "metadata":	{
+                        "render.modes":	[
+                            "human",
+                            "rgb_array",
+                            "depth_array"
+                        ],
+                        "video.frames_per_second":	20
+                    },
+                    "observation_space":	{
+                        "Box(111,)":	{
+                            "dtype":	"float32",
+                            "high":	"[inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf]",
+                            "low":	"[-inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf]",
+                            "np_random":	"<mtrand.RandomState object at 0x7f5283559ab0>",
+                            "shape":	[
+                                111
+                            ]
+                        }
+                    },
+                    "reward_range":	[
+                        -Infinity,
+                        Infinity
+                    ]
+                }
+            },
+            "get_actions":	[
+                "<function load_policy.<locals>.<lambda> at 0x7f51ebe409d8>",
+                "<function load_policy.<locals>.<lambda> at 0x7f528344ef28>",
+                "<function load_policy.<locals>.<lambda> at 0x7f51dc1cb048>",
+                "<function load_policy.<locals>.<lambda> at 0x7f51df644b70>",
+                "<function load_policy.<locals>.<lambda> at 0x7f526734ac80>",
+                "<function load_policy.<locals>.<lambda> at 0x7f526734aea0>",
+                "<function load_policy.<locals>.<lambda> at 0x7f51dc1cb0d0>",
+                "<function load_policy.<locals>.<lambda> at 0x7f51df61d048>",
+                "<function load_policy.<locals>.<lambda> at 0x7f51df666158>",
+                "<function load_policy.<locals>.<lambda> at 0x7f51dc1a6268>",
+                "<function load_policy.<locals>.<lambda> at 0x7f528341c378>",
+                "<function load_policy.<locals>.<lambda> at 0x7f519817d488>",
+                "<function load_policy.<locals>.<lambda> at 0x7f5267359598>",
+                "<function load_policy.<locals>.<lambda> at 0x7f51df6536a8>",
+                "<function load_policy.<locals>.<lambda> at 0x7f51dc1417b8>",
+                "<function load_policy.<locals>.<lambda> at 0x7f51341418c8>",
+                "<function load_policy.<locals>.<lambda> at 0x7f4ef47299d8>",
+                "<function load_policy.<locals>.<lambda> at 0x7f5134143ae8>",
+                "<function load_policy.<locals>.<lambda> at 0x7f4dd0b92bf8>",
+                "<function load_policy.<locals>.<lambda> at 0x7f51df618d08>",
+                "<function load_policy.<locals>.<lambda> at 0x7f4ef47290d0>",
+                "<function load_policy.<locals>.<lambda> at 0x7f5090320048>",
+                "<function load_policy.<locals>.<lambda> at 0x7f4d93fe60d0>",
+                "<function load_policy.<locals>.<lambda> at 0x7f513413c1e0>",
+                "<function load_policy.<locals>.<lambda> at 0x7f50143c22f0>",
+                "<function load_policy.<locals>.<lambda> at 0x7f4d19d56400>",
+                "<function load_policy.<locals>.<lambda> at 0x7f51df615510>"
+            ]
+        }
+    },
+    "gamma":	0.99,
+    "logger":	{
+        "<spinup.utils.logx.EpochLogger object at 0x7f4d2cbf3160>":	{
+            "epoch_dict":	{},
+            "exp_name":	"fully_corrective_eps05",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/abbyvs/maxent/explore/data/ddpg/fully_corrective_eps05/fully_corrective_eps05_s10",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/abbyvs/maxent/explore/data/ddpg/fully_corrective_eps05/fully_corrective_eps05_s10/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"fully_corrective_eps05",
+        "output_dir":	"/home/abbyvs/maxent/explore/data/ddpg/fully_corrective_eps05/fully_corrective_eps05_s10"
+    },
+    "max_ep_len":	1000,
+    "pi_lr":	0.001,
+    "polyak":	0.995,
+    "q_lr":	0.001,
+    "replay_size":	1000000,
+    "save_freq":	1,
+    "seed":	10,
+    "start_steps":	10000,
+    "steps_per_epoch":	5000
+}

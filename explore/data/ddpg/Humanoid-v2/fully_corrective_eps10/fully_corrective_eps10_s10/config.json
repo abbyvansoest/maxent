@@ -1,0 +1,184 @@
+{
+    "ac_kwargs":	{
+        "hidden_sizes":	[
+            64,
+            64
+        ]
+    },
+    "act_noise":	0.1,
+    "actor_critic":	"mlp_actor_critic",
+    "batch_size":	100,
+    "env_fn":	"<function <lambda> at 0x7f5564c99950>",
+    "epochs":	500,
+    "eps":	0.1,
+    "exp_name":	"fully_corrective_eps10",
+    "explorer":	{
+        "<explorer.Explorer object at 0x7f5564c9bf28>":	{
+            "env":	{
+                "<TimeLimit<HumanoidEnv<Humanoid-v2>>>":	{
+                    "_elapsed_steps":	0,
+                    "_episode_started_at":	null,
+                    "_max_episode_seconds":	null,
+                    "_max_episode_steps":	1000,
+                    "action_space":	{
+                        "Box(17,)":	{
+                            "dtype":	"float32",
+                            "high":	"[0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4]",
+                            "low":	"[-0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4\n -0.4 -0.4 -0.4]",
+                            "np_random":	"<mtrand.RandomState object at 0x7f557a503948>",
+                            "shape":	[
+                                17
+                            ]
+                        }
+                    },
+                    "env":	{
+                        "<HumanoidEnv<Humanoid-v2>>":	{
+                            "_ezpickle_args":	[],
+                            "_ezpickle_kwargs":	{},
+                            "_viewers":	{},
+                            "action_space":	{
+                                "Box(17,)":	{
+                                    "dtype":	"float32",
+                                    "high":	"[0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4]",
+                                    "low":	"[-0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4 -0.4\n -0.4 -0.4 -0.4]",
+                                    "np_random":	"<mtrand.RandomState object at 0x7f557a503948>",
+                                    "shape":	[
+                                        17
+                                    ]
+                                }
+                            },
+                            "data":	"<mujoco_py.cymj.PyMjData object at 0x55ac270a52b8>",
+                            "frame_skip":	5,
+                            "init_qpos":	"[0.  0.  1.4 1.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.\n 0.  0.  0.  0.  0.  0. ]",
+                            "init_qvel":	"[0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]",
+                            "metadata":	{
+                                "render.modes":	[
+                                    "human",
+                                    "rgb_array",
+                                    "depth_array"
+                                ],
+                                "video.frames_per_second":	67
+                            },
+                            "model":	"<mujoco_py.cymj.PyMjModel object at 0x55ac270a4348>",
+                            "np_random":	"<mtrand.RandomState object at 0x7f557a503a20>",
+                            "obs_dim":	376,
+                            "observation_space":	{
+                                "Box(376,)":	{
+                                    "dtype":	"float32",
+                                    "high":	"[inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf]",
+                                    "low":	"[-inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf]",
+                                    "np_random":	"<mtrand.RandomState object at 0x7f557a5039d8>",
+                                    "shape":	[
+                                        376
+                                    ]
+                                }
+                            },
+                            "sim":	"<mujoco_py.cymj.MjSim object at 0x7f557a4bc158>",
+                            "spec":	{
+                                "EnvSpec(Humanoid-v2)":	{
+                                    "_entry_point":	"gym.envs.mujoco:HumanoidEnv",
+                                    "_env_name":	"Humanoid",
+                                    "_kwargs":	{},
+                                    "_local_only":	false,
+                                    "id":	"Humanoid-v2",
+                                    "max_episode_seconds":	null,
+                                    "max_episode_steps":	1000,
+                                    "nondeterministic":	false,
+                                    "reward_threshold":	null,
+                                    "tags":	{
+                                        "wrapper_config.TimeLimit.max_episode_steps":	1000
+                                    },
+                                    "trials":	100
+                                }
+                            },
+                            "viewer":	null
+                        }
+                    },
+                    "metadata":	{
+                        "render.modes":	[
+                            "human",
+                            "rgb_array",
+                            "depth_array"
+                        ],
+                        "video.frames_per_second":	67
+                    },
+                    "observation_space":	{
+                        "Box(376,)":	{
+                            "dtype":	"float32",
+                            "high":	"[inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf]",
+                            "low":	"[-inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf]",
+                            "np_random":	"<mtrand.RandomState object at 0x7f557a5039d8>",
+                            "shape":	[
+                                376
+                            ]
+                        }
+                    },
+                    "reward_range":	[
+                        -Infinity,
+                        Infinity
+                    ]
+                }
+            },
+            "get_actions":	[
+                "<function load_policy.<locals>.<lambda> at 0x7f54e2de99d8>",
+                "<function load_policy.<locals>.<lambda> at 0x7f557a403ea0>",
+                "<function load_policy.<locals>.<lambda> at 0x7f54d65f6048>",
+                "<function load_policy.<locals>.<lambda> at 0x7f54d6661ae8>",
+                "<function load_policy.<locals>.<lambda> at 0x7f556409fbf8>",
+                "<function load_policy.<locals>.<lambda> at 0x7f54100d0d08>",
+                "<function load_policy.<locals>.<lambda> at 0x7f54100d0f28>",
+                "<function load_policy.<locals>.<lambda> at 0x7f53502da048>",
+                "<function load_policy.<locals>.<lambda> at 0x7f52305840d0>",
+                "<function load_policy.<locals>.<lambda> at 0x7f54100db1e0>",
+                "<function load_policy.<locals>.<lambda> at 0x7f51d06712f0>",
+                "<function load_policy.<locals>.<lambda> at 0x7f547011e400>",
+                "<function load_policy.<locals>.<lambda> at 0x7f5230598510>",
+                "<function load_policy.<locals>.<lambda> at 0x7f54d6631620>",
+                "<function load_policy.<locals>.<lambda> at 0x7f535028b730>",
+                "<function load_policy.<locals>.<lambda> at 0x7f557a31c840>",
+                "<function load_policy.<locals>.<lambda> at 0x7f50b4ca6950>",
+                "<function load_policy.<locals>.<lambda> at 0x7f50a5e0ca60>",
+                "<function load_policy.<locals>.<lambda> at 0x7f5079291b70>",
+                "<function load_policy.<locals>.<lambda> at 0x7f557a3c5c80>",
+                "<function load_policy.<locals>.<lambda> at 0x7f557a3c5ea0>",
+                "<function load_policy.<locals>.<lambda> at 0x7f50a5e30048>",
+                "<function load_policy.<locals>.<lambda> at 0x7f53b0217048>",
+                "<function load_policy.<locals>.<lambda> at 0x7f5410092158>",
+                "<function load_policy.<locals>.<lambda> at 0x7f50b4ca4268>",
+                "<function load_policy.<locals>.<lambda> at 0x7f51d0654378>",
+                "<function load_policy.<locals>.<lambda> at 0x7f50ce935488>",
+                "<function load_policy.<locals>.<lambda> at 0x7f5050712598>",
+                "<function load_policy.<locals>.<lambda> at 0x7f557a3256a8>"
+            ]
+        }
+    },
+    "gamma":	0.99,
+    "logger":	{
+        "<spinup.utils.logx.EpochLogger object at 0x7f4fbe44fd68>":	{
+            "epoch_dict":	{},
+            "exp_name":	"fully_corrective_eps10",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/abbyvs/maxent/explore/data/ddpg/Humanoid-v2/fully_corrective_eps10/fully_corrective_eps10_s10",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/abbyvs/maxent/explore/data/ddpg/Humanoid-v2/fully_corrective_eps10/fully_corrective_eps10_s10/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"fully_corrective_eps10",
+        "output_dir":	"/home/abbyvs/maxent/explore/data/ddpg/Humanoid-v2/fully_corrective_eps10/fully_corrective_eps10_s10"
+    },
+    "max_ep_len":	1000,
+    "pi_lr":	0.001,
+    "polyak":	0.995,
+    "q_lr":	0.001,
+    "replay_size":	1000000,
+    "save_freq":	1,
+    "seed":	10,
+    "start_steps":	10000,
+    "steps_per_epoch":	10000
+}

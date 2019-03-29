@@ -1,0 +1,42 @@
+{
+    "ac_kwargs":	{
+        "hidden_sizes":	[
+            64,
+            64
+        ]
+    },
+    "actor_critic":	"mlp_actor_critic",
+    "env_fn":	"<function <lambda> at 0x7f65d137ea60>",
+    "epochs":	250,
+    "eps":	0.0,
+    "exp_name":	"fully_corrective_base",
+    "explorer":	null,
+    "gamma":	0.99,
+    "lam":	0.97,
+    "logger":	{
+        "<spinup.utils.logx.EpochLogger object at 0x7f65d1382d30>":	{
+            "epoch_dict":	{},
+            "exp_name":	"fully_corrective_base",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/home/abbyvs/maxent/explore/data/vpg/fully_corrective_base/fully_corrective_base_s0",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/home/abbyvs/maxent/explore/data/vpg/fully_corrective_base/fully_corrective_base_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"fully_corrective_base",
+        "output_dir":	"/home/abbyvs/maxent/explore/data/vpg/fully_corrective_base/fully_corrective_base_s0"
+    },
+    "max_ep_len":	1000,
+    "pi_lr":	0.0003,
+    "save_freq":	10,
+    "seed":	0,
+    "steps_per_epoch":	5000,
+    "train_v_iters":	80,
+    "vf_lr":	0.001
+}
