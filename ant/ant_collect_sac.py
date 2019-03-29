@@ -490,10 +490,12 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
                                                      states_visited_indexes)
         
     # cumulative plots.
-    plotting.heatmap4(running_avg_ps_xy, running_avg_ps_baseline_xy, indexes, ext="cumulative")
-    plotting.heatmap4(avg_ps_xy, avg_ps_baseline_xy, indexes, ext="epoch")
     plotting.running_average_entropy(running_avg_entropies, running_avg_entropies_baseline)
     plotting.running_average_entropy(running_avg_entropies_xy, running_avg_entropies_baseline_xy, ext='_xy')
+    
+    plotting.heatmap4(running_avg_ps_xy, running_avg_ps_baseline_xy, indexes, ext="cumulative")
+    plotting.heatmap4(avg_ps_xy, avg_ps_baseline_xy, indexes, ext="epoch")
+    
     plotting.percent_state_space_reached(pct_visited, pct_visited_baseline, ext='_total')
     plotting.percent_state_space_reached(pct_visited_xy, pct_visited_xy_baseline, ext="_xy")
     
@@ -510,7 +512,7 @@ def main():
     env.seed(int(time.time())) # seed environment
 
     TIME = datetime.now().strftime('%Y_%m_%d-%H-%M')
-    plotting.FIG_DIR = 'figs/' + args.env + '/'
+    plotting.FIG_DIR = 'figs/'
     plotting.model_time = args.exp_name + '/'
     if not os.path.exists(plotting.FIG_DIR+plotting.model_time):
         os.makedirs(plotting.FIG_DIR+plotting.model_time)

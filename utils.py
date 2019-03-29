@@ -22,6 +22,8 @@ parser.add_argument('--epochs', type=int, default=16, metavar='epo',
                     help='number of models to train on entropy rewards')
 parser.add_argument('--T', type=int, default=10000, metavar='T',
                     help='number of steps to roll out entropy policy')
+parser.add_argument('--T_small', type=int, default=10000, metavar='T',
+                    help='small number of steps to roll out entropy policy')
 parser.add_argument('--n', type=int, default=20, metavar='n',
                     help='number of rollouts to average over')
 parser.add_argument('--env', type=str, default='test', metavar='env',
@@ -89,6 +91,8 @@ if args.autoencode and args.gaussian:
     raise ValueError("must set only one: --autoencode  --gaussian")
 if args.geometric and args.fully_corrective:
     raise ValueError("must set only one: --fully_corrective  --geometric")
+if args.T_small > args.T:
+    raise ValueError('T_small > T: behavior will not be correct')
 
 def get_args():
     return copy.deepcopy(args)
@@ -150,7 +154,7 @@ def fully_corrective_weights(distributions, eps=1e-3, step=.2):
 
         if abs(entropy - prev_entropy) < eps:
             break
-        if norm < 5e-3:
+        if norm < 6e-3:
             break
         
         # Step in the direction of the gradient.

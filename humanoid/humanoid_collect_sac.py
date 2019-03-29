@@ -47,12 +47,13 @@ def select_action(policies, weights, env, obs):
 
 def execute_one_rollout(policies, weights, env, obs, T, data, video_dir='', wrapped=False):
 
-    state_data, p_xy, random_initial_state = data
+    state_data, p_xy, p_xy_small, random_initial_state = data
     random_T = np.floor(random.random()*T)
 
     done = False
     uid = 1
     t = 0
+    t_small = 0
     while (t < T) and not done:
         t = t + 1
 
@@ -64,6 +65,10 @@ def execute_one_rollout(policies, weights, env, obs, T, data, video_dir='', wrap
         state_data.append(obs)
 
         p_xy[tuple(humanoid_utils.discretize_state_2d(obs, env))] += 1
+        if t < args.T_small + 1: # only get first T_small steps. note that we've already incremented t
+            t_small = t_small + 1
+            p_xy_small[tuple(humanoid_utils.discretize_state_2d(obs, env))] += 1
+        
         if t == random_T:
             random_initial_state = obs
 
@@ -82,7 +87,8 @@ def execute_one_rollout(policies, weights, env, obs, T, data, video_dir='', wrap
                 d = False
 
     p_xy /= float(t)
-    data = (state_data, p_xy, random_initial_state)
+    p_xy_small /= float(args.T_small)
+    data = (state_data, p_xy, p_xy_small, random_initial_state)
     return data
                 
 # run a simulation to see how the average policy behaves.
@@ -91,8 +97,9 @@ def execute_average_policy(env, policies, T, weights=[], initial_state=[], n=10,
     state_data = []
     random_initial_state = []
     p_xy = np.zeros(shape=(tuple(humanoid_utils.num_states_2d)))
+    p_xy_small = np.zeros(shape=(tuple(humanoid_utils.num_states_2d)))
     
-    data = (state_data, p_xy, random_initial_state)
+    data = (state_data, p_xy, p_xy_small, random_initial_state)
 
     # average results over n rollouts
     for iteration in range(n):
@@ -122,10 +129,10 @@ def execute_average_policy(env, policies, T, weights=[], initial_state=[], n=10,
             
     env.close()
     
-    state_data, p_xy, random_initial_state = data
+    state_data, p_xy, p_xy_small, random_initial_state = data
     print('Sum = %f' % (np.sum(p_xy)))
 
-    return state_data, p_xy, random_initial_state
+    return state_data, p_xy, p_xy_small, random_initial_state
 
 def entropy(pt):
     utils.log_statement("pt size %d" % pt.size)
@@ -159,10 +166,14 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     running_avg_ent_baseline_xy = 0
 
     running_avg_entropies_xy = []
+    running_avg_cheat_entropies = []
+    running_avg_entropies_small = []
     running_avg_ps_xy = []
     avg_ps_xy = []
 
     running_avg_entropies_baseline_xy = []
+    running_avg_cheat_entropies_baseline = []
+    running_avg_entropies_small_baseline = []
     running_avg_ps_baseline_xy = []
     avg_ps_baseline_xy = []
 
@@ -205,7 +216,19 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
                                   start_steps=args.start_steps) 
         policies.append(sac)
         
-        p_xy = sac.test_agent(T)
+        print("Collecting baseline experience....")
+        p_baseline_xy,_ = sac.test_agent_random(T, n=args.n)
+        p_baseline_xy_small,_ = sac.test_agent_random(T=args.T_small, n=args.n)
+        
+        print("Compute baseline entropy....")
+        round_entropy_baseline_xy = entropy(p_baseline_xy.ravel())
+        round_entropy_baseline_xy_small = entropy(p_baseline_xy_small.ravel())
+        
+        if i == 0:
+            p_xy = p_baseline_xy
+        else:
+            p_xy = sac.test_agent(T)
+        
         distributions.append(p_xy)
         weights = utils.get_weights(distributions)
         
@@ -218,21 +241,35 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         # Execute the cumulative average policy thus far.
         # Estimate distribution and entropy.
         print("Executing mixed policy...")
-        data, average_p_xy, initial_state = execute_average_policy(env, policies, T, weights,
+        
+        data, average_p_xy, average_p_xy_small, initial_state = execute_average_policy(env, policies, T, weights,
                                            initial_state=initial_state, n=args.n, 
                                            render=args.render, video_dir=video_dir+'/mixed/'+epoch, epoch=i)
-        test_data,_,_ = execute_average_policy(env, policies, T=2000, weights=weights,
+        test_data,_,_,_ = execute_average_policy(env, policies, T=2000, weights=weights,
                                                initial_state=initial_state, n=1, 
                                                render=False, epoch=i)
         
+        if i == 0:
+            average_p_xy = p_baseline_xy
+            average_p_xy_small = p_baseline_xy_small
+        
         print("Calculating maxEnt entropy...")
         round_entropy_xy = entropy(average_p_xy.ravel())
+        round_entropy_xy_small = entropy(average_p_xy_small.ravel())
         
         # Update running averages for maxEnt.
         print("Updating maxEnt running averages...")
         running_avg_ent_xy = running_avg_ent_xy * (i)/float(i+1) + round_entropy_xy/float(i+1)
         running_avg_p_xy *= (i)/float(i+1)
         running_avg_p_xy += average_p_xy/float(i+1)
+        entropy_of_running_avg_p = entropy(running_avg_p_xy.ravel()) 
+        
+         # Update baseline running averages.
+        print("Updating baseline running averages...")
+        running_avg_ent_baseline_xy = running_avg_ent_baseline_xy * (i)/float(i+1) + round_entropy_baseline_xy/float(i+1)
+        running_avg_p_baseline_xy *= (i)/float(i+1) 
+        running_avg_p_baseline_xy += p_baseline_xy/float(i+1)
+        entropy_of_running_avg_p_baseline = entropy(running_avg_p_baseline_xy.ravel()) 
         
         # TODO: collect a lot of data from the current mixed policy
         # use this data to learn a new distribution in reward_fn object
@@ -248,24 +285,18 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         if i in indexes:
             running_avg_ps_xy.append(np.copy(running_avg_p_xy))
             avg_ps_xy.append(np.copy(average_p_xy))
-
-        print("Collecting baseline experience....")
-        p_baseline_xy,_ = sac.test_agent_random(T, n=args.n)
-        
-        print("Compute baseline entropy....")
-        round_entropy_baseline_xy = entropy(p_baseline_xy.ravel())
-
-        # Update baseline running averages.
-        print("Updating baseline running averages...")
-        running_avg_ent_baseline_xy = running_avg_ent_baseline_xy * (i)/float(i+1) + round_entropy_baseline_xy/float(i+1)
-        running_avg_p_baseline_xy *= (i)/float(i+1) 
-        running_avg_p_baseline_xy += p_baseline_xy/float(i+1)
         
         # (save for plotting)
         running_avg_entropies_baseline_xy.append(running_avg_ent_baseline_xy)
         if i in indexes:
             running_avg_ps_baseline_xy.append(np.copy(running_avg_p_baseline_xy))
             avg_ps_baseline_xy.append(np.copy(p_baseline_xy))
+           
+        # (save for plotting)
+        running_avg_cheat_entropies.append(entropy_of_running_avg_p)
+        running_avg_cheat_entropies_baseline.append(entropy_of_running_avg_p_baseline)
+        running_avg_entropies_small.append(round_entropy_xy_small)
+        running_avg_entropies_small_baseline.append(round_entropy_baseline_xy_small)
     
         utils.log_statement(average_p_xy)
         utils.log_statement(p_baseline_xy)
@@ -273,9 +304,11 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         # Print round summary.
         col_headers = ["", "baseline", "maxEnt"]
         col1 = ["round_entropy_xy", 
-                "running_avg_ent_xy"]
-        col2 = [round_entropy_baseline_xy, running_avg_ent_baseline_xy]
-        col3 = [round_entropy_xy, running_avg_ent_xy]
+                "round_entropy_small", 
+                "running_avg_ent_xy", 
+                "entropy_of_running_avg"]
+        col2 = [round_entropy_baseline_xy, round_entropy_baseline_xy_small, running_avg_ent_baseline_xy, entropy_of_running_avg_p]
+        col3 = [round_entropy_xy, round_entropy_xy_small, running_avg_ent_xy, entropy_of_running_avg_p_baseline]
         table = tabulate(np.transpose([col1, col2, col3]), 
             col_headers, tablefmt="fancy_grid", floatfmt=".4f")
         utils.log_statement(table)
@@ -283,13 +316,16 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         # Plot from round.
         plotting.heatmap(running_avg_p_xy, average_p_xy, i)
         plotting.heatmap1(running_avg_p_baseline_xy, i)
-        
 
-    # cumulative plots.
+    #   cumulative plots.
+    plotting.running_average_entropy(running_avg_entropies_xy, running_avg_entropies_baseline_xy, ext='_xy')
+    plotting.running_average_entropy(running_avg_cheat_entropies, running_avg_cheat_entropies_baseline, ext='_cumulative_xy') 
+    plotting.running_average_entropy(running_avg_entropies_small, running_avg_entropies_small_baseline, ext='_small_T') 
+
+    
     plotting.heatmap4(running_avg_ps_xy, running_avg_ps_baseline_xy, indexes, ext="cumulative")
     plotting.heatmap4(avg_ps_xy, avg_ps_baseline_xy, indexes, ext="epoch")
-    plotting.running_average_entropy(running_avg_entropies_xy, running_avg_entropies_baseline_xy, ext='_xy')
-
+    
     return policies
 
 def main():
@@ -301,7 +337,7 @@ def main():
     env = gym.make(args.env)
     env.seed(int(time.time())) # seed environment
 
-    plotting.FIG_DIR = 'figs/' + args.env + '/'
+    plotting.FIG_DIR = 'figs/'
     plotting.model_time = args.exp_name + '/'
     if not os.path.exists(plotting.FIG_DIR+plotting.model_time):
         os.makedirs(plotting.FIG_DIR+plotting.model_time)
