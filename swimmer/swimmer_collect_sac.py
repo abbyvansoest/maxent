@@ -155,13 +155,17 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     direct = os.getcwd()+ '/data/'
     experiment_directory = direct + args.exp_name
     
-    indexes = [1,5,10,25]
+    indexes = [1,5,10,15]
 
     running_avg_p_xy = np.zeros(shape=(tuple(swimmer_utils.num_states_2d)))
     running_avg_ent_xy = 0
+    entropy_of_running_avg_p = 0.
+    round_entropy_xy_small = 0.
 
     running_avg_p_baseline_xy = np.zeros(shape=(tuple(swimmer_utils.num_states_2d)))
     running_avg_ent_baseline_xy = 0
+    entropy_of_running_avg_p_baseline = 0.
+    round_entropy_baseline_xy_small = 0.
 
     running_avg_entropies_xy = []
     running_avg_cheat_entropies = []
@@ -220,7 +224,6 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         
         print("Compute baseline entropy....")
         round_entropy_baseline_xy = entropy(p_baseline_xy.ravel())
-        round_entropy_baseline_xy_small = entropy(p_baseline_xy_small.ravel())
         
         if i == 0:
             p_xy = p_baseline_xy
@@ -252,21 +255,24 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         
         print("Calculating maxEnt entropy...")
         round_entropy_xy = entropy(average_p_xy.ravel())
-        round_entropy_xy_small = entropy(average_p_xy_small.ravel())
         
         # Update running averages for maxEnt.
         print("Updating maxEnt running averages...")
         running_avg_ent_xy = running_avg_ent_xy * (i)/float(i+1) + round_entropy_xy/float(i+1)
         running_avg_p_xy *= (i)/float(i+1)
         running_avg_p_xy += average_p_xy/float(i+1)
-        entropy_of_running_avg_p = entropy(running_avg_p_xy.ravel())
+        entropy_of_running_avg_p = entropy_of_running_avg_p * (i)/float(i+1) + entropy(running_avg_p_xy.ravel())/float(i+1)
+        round_entropy_xy_small = round_entropy_xy_small * (i)/float(i+1) + entropy(average_p_xy_small.ravel())/float(i+1)
         
         # Update baseline running averages.
         print("Updating baseline running averages...")
         running_avg_ent_baseline_xy = running_avg_ent_baseline_xy * (i)/float(i+1) + round_entropy_baseline_xy/float(i+1)
         running_avg_p_baseline_xy *= (i)/float(i+1) 
         running_avg_p_baseline_xy += p_baseline_xy/float(i+1)
-        entropy_of_running_avg_p_baseline = entropy(running_avg_p_baseline_xy.ravel())
+        entropy_of_running_avg_p_baseline = (entropy_of_running_avg_p_baseline * (i)/float(i+1) +
+                                             entropy(running_avg_p_baseline_xy.ravel())/float(i+1))
+        round_entropy_baseline_xy_small = (round_entropy_baseline_xy_small * (i)/float(i+1) +
+                                           entropy(p_baseline_xy_small.ravel())/float(i+1))
         
         # TODO: collect a lot of data from the current mixed policy
         # use this data to learn a new distribution in reward_fn object
@@ -274,7 +280,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         # compute rewards
         # update reward function
         print("Update reward function")
-        reward_fn = RewardFn(data, n_components=8, eps=.001)
+        reward_fn = RewardFn(data, eps=.001)
         reward_fn.test(test_data, env)
 
         # (save for plotting)
