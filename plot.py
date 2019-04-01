@@ -6,6 +6,12 @@ import os
 import os.path as osp
 import numpy as np
 
+# USAGE:
+# python plot.py explore/data/(algo)/(env)/(exp_prefix) --smooth (smooth) --fig_name=(algo)_(env)_(exp_prefix)_smooth(smooth)
+
+# EXAMPLE
+# python plot.py explore/data/ddpg/Ant-v2/pretrain_ --smooth 10 --fig_name=ddpg_humanoid_pretrain_smooth10
+
 DIV_LINE_WIDTH = 50
 
 # Global vars for tracking and labeling data at load time.
