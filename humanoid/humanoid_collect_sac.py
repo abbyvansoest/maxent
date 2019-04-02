@@ -226,6 +226,8 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         running_avg_p_xy *= (i)/float(i+1)
         running_avg_p_xy += average_p_xy/float(i+1)
         
+        utils.log_statement(average_p_xy)
+        
         # TODO: collect a lot of data from the current mixed policy
         # use this data to learn a new distribution in reward_fn object
         # then, the reward_fn object will use the new distribution to 
@@ -243,6 +245,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
 
         print("Collecting baseline experience....")
         p_baseline_xy,_ = sac.test_agent_random(T, n=args.n)
+        utils.log_statement(p_baseline_xy)
         
         print("Compute baseline entropy....")
         round_entropy_baseline_xy = entropy(p_baseline_xy.ravel())
@@ -258,9 +261,6 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         if i in indexes:
             running_avg_ps_baseline_xy.append(np.copy(running_avg_p_baseline_xy))
             avg_ps_baseline_xy.append(np.copy(p_baseline_xy))
-    
-        utils.log_statement(average_p_xy)
-        utils.log_statement(p_baseline_xy)
         
         # Print round summary.
         col_headers = ["", "baseline", "maxEnt"]
