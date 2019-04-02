@@ -269,6 +269,13 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     experiment_directory = direct + args.exp_name
     print(experiment_directory)
     
+    print(sys.argv)
+    if not os.path.exists(experiment_directory):
+        os.makedirs(experiment_directory)
+        f = open(experiment_directory+'/args', 'w')
+        f.write(' '.join(sys.argv))
+        f.flush()
+    
     indexes = [1,5,10,15]
     states_visited_indexes = [0,5,10,15]
     
