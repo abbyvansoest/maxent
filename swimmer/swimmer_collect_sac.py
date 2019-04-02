@@ -310,8 +310,14 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
                 "round_entropy_small",
                 "running_avg_ent_xy",
                 "entropy_of_running_avg"]
-        col2 = [round_entropy_baseline_xy, round_entropy_baseline_xy_small, running_avg_ent_baseline_xy, entropy_of_running_avg_p_baseline]
-        col3 = [round_entropy_xy, round_entropy_xy_small, running_avg_ent_xy, entropy_of_running_avg_p]
+        col2 = [round_entropy_baseline_xy, 
+                round_entropy_baseline_xy_small, 
+                running_avg_ent_baseline_xy, 
+                entropy_of_running_avg_p_baseline]
+        col3 = [round_entropy_xy, 
+                round_entropy_xy_small, 
+                running_avg_ent_xy, 
+                entropy_of_running_avg_p]
         table = tabulate(np.transpose([col1, col2, col3]), 
             col_headers, tablefmt="fancy_grid", floatfmt=".4f")
         utils.log_statement(table)
@@ -319,8 +325,11 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         # Plot from round.
         plotting.heatmap(running_avg_p_xy, average_p_xy, i)
         plotting.heatmap1(running_avg_p_baseline_xy, i)
-        
 
+    # save final expert weights to use with the trained oracles.
+    weights_file = experiment_directory + '/policy_weights'
+    np.save(weights_file, weights)
+    
     # cumulative plots.
     plotting.running_average_entropy(running_avg_entropies_xy, running_avg_entropies_baseline_xy, ext='_xy')
     plotting.running_average_entropy(running_avg_cheat_entropies, running_avg_cheat_entropies_baseline, ext='_cumulative_xy') 

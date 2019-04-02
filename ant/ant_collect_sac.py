@@ -488,7 +488,11 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
              plotting.states_visited_over_time_multi(states_visited_cumulative, 
                                                      states_visited_cumulative_baseline, 
                                                      states_visited_indexes)
-        
+    
+    # save final expert weights to use with the trained oracles.
+    weights_file = experiment_directory + '/policy_weights'
+    np.save(weights_file, weights)
+    
     # cumulative plots.
     plotting.running_average_entropy(running_avg_entropies, running_avg_entropies_baseline)
     plotting.running_average_entropy(running_avg_entropies_xy, running_avg_entropies_baseline_xy, ext='_xy')
