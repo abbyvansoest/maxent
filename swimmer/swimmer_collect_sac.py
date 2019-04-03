@@ -268,8 +268,10 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         running_avg_ent_xy = running_avg_ent_xy * (i)/float(i+1) + round_entropy_xy/float(i+1)
         running_avg_p_xy *= (i)/float(i+1)
         running_avg_p_xy += average_p_xy/float(i+1)
-        entropy_of_running_avg_p = entropy_of_running_avg_p * (i)/float(i+1) + entropy(running_avg_p_xy.ravel())/float(i+1)
-        round_entropy_xy_small = round_entropy_xy_small * (i)/float(i+1) + entropy(average_p_xy_small.ravel())/float(i+1)
+        entropy_of_running_avg_p = (entropy_of_running_avg_p * (i)/float(i+1) + 
+                                    entropy(running_avg_p_xy.ravel())/float(i+1))
+        round_entropy_xy_small = (round_entropy_xy_small * (i)/float(i+1) +
+                                  entropy(average_p_xy_small.ravel())/float(i+1))
         
         # Update baseline running averages.
         print("Updating baseline running averages...")
