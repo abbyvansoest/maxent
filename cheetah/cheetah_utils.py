@@ -1,14 +1,23 @@
-# 0 : x pos
-# 1 : y pos
-# 2 : angular rotation of body
-# 3 : joint 1 angle
-# 4 : joint 2 angle
+# State-Space (name/joint/parameter):
+# 0 : rootx     slider      position (m)
+# 1 : rootz     slider      position (m)
+# 2 : rooty     hinge       angle (rad)
+# 3 : bthigh    hinge       angle (rad)
+# 4 : bshin     hinge       angle (rad)
+# 5 : bfoot     hinge       angle (rad)
+# 6 : fthigh    hinge       angle (rad)
+# 7 : fshin     hinge       angle (rad)
+# 8 : ffoot     hinge       angle (rad)
+# 9 : rootx     slider      velocity (m/s)
+# 10 : rootz     slider      velocity (m/s)
+# 11 : rooty     hinge       angular velocity (rad/s)
+# 12 : bthigh    hinge       angular velocity (rad/s)
+# 13 : bshin     hinge       angular velocity (rad/s)
+# 14 : bfoot     hinge       angular velocity (rad/s)
+# 15 : fthigh    hinge       angular velocity (rad/s)
+# 16 : fshin     hinge       angular velocity (rad/s)
+# 17 : ffoot     hinge       angular velocity (rad/s)
 
-# 5 : x vel
-# 6 : y vel
-# 7 : body angular vel
-# 8 : joint1 angular vel
-# 9 : joint2 angular vel
 
 import gym
 import time
@@ -36,23 +45,16 @@ action_dim = int(env.action_space.sample().shape[0])
 features = [0,1,3,4,5,6]
 height_bins = 20
 
-# min_bin = -20
-# max_bin = 20
-# num_bins = 20
-
 min_bin = -10
 max_bin = 10
-num_bins = 12
+num_bins = 15
 
-start = 0
-stop = 2
-
-special = [0, 1]
+special = [0, 9]
 mins = [-12, -12]
 maxs = [12, 12]
 bins = [10, 10]
 
-plot_2d = [0,1]
+plot_2d = [0,9]
 min_bin_2d_0, min_bin_2d_1 = -10, -10
 max_bin_2d_0, max_bin_2d_1  = 10, 10
 num_bins_2d_0,num_bins_2d_1 = 15, 15
@@ -232,8 +234,6 @@ def discretize_state_autoencoder(env):
     state = []
     for i, feature in enumerate(obs):
         state.append(discretize_value(feature, state_bins[i]))
-#     print(obs)
-#     print(state)
     return state
 
 # Discretize the observation features and reduce them to a single list.
@@ -258,10 +258,10 @@ def get_state(env, obs, wrapped=False):
         state = env.unwrapped.state_vector()
     else:
         state = env.env.state_vector()
-    if not np.array_equal(obs[:len(state) - 2], state[2:]):
+    
+    if not np.array_equal(obs[:len(state) - 1], state[1:]):
         utils.log_statement(obs)
         utils.log_statement(state)
         raise ValueError("state and observation are not equal")
 
-#     state[2:5] = np.unwrap(state[2:5])    
     return state
