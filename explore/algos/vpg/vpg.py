@@ -94,6 +94,8 @@ def vpg(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
         steps_per_epoch=4000, epochs=50, gamma=0.99, pi_lr=3e-4,
         vf_lr=1e-3, train_v_iters=80, lam=0.97, max_ep_len=1000,
         logger_kwargs=dict(), save_freq=10, explorer=None, eps=0.05, pretrain_epochs=0):
+    
+    tf.reset_default_graph()
 
     logger = EpochLogger(**logger_kwargs)
     logger.save_config(locals())
@@ -176,6 +178,8 @@ def vpg(env_fn, actor_critic=core.mlp_actor_critic, ac_kwargs=dict(), seed=0,
 
     # Main loop: collect experience in env and update/log each epoch
     for epoch in range(total_epochs):
+        # TODO(abbyvs): deteriorate eps somehow. factor of .99?
+        # eps = eps*0.99
         for t in range(local_steps_per_epoch):
             a, v_t, logp_t = sess.run(get_action_ops, feed_dict={x_ph: o.reshape(1,-1)})
             
