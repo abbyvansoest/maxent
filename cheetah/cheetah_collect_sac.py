@@ -170,7 +170,8 @@ def execute_one_rollout(policies, weights, env, start_obs, T, data, norm, wrappe
 # run a simulation to see how the average policy behaves.
 def execute_average_policy(env, policies, T, weights,
                            reward_fn=[], norm=[], initial_state=[], 
-                           n=10, render=False, video_dir='', epoch=0):
+                           n=10, render=False, render_steps=0, 
+                           video_dir='', epoch=0):
     
     p = np.zeros(shape=(tuple(cheetah_utils.num_states)))
     p_xy = np.zeros(shape=(tuple(cheetah_utils.num_states_2d)))
@@ -204,7 +205,7 @@ def execute_average_policy(env, policies, T, weights,
             qvel = initial_state[len(cheetah_utils.qpos):]
             wrapped_env.unwrapped.set_state(qpos, qvel)
             obs = cheetah_utils.get_state(wrapped_env, wrapped_env.unwrapped._get_obs(), wrapped=True)
-            data = execute_one_rollout(policies, weights, wrapped_env, obs, T=2000, data=data, norm=norm, wrapped=True)
+            data = execute_one_rollout(policies, weights, wrapped_env, obs, T=render_steps, data=data, norm=norm, wrapped=True)
         else:
             obs = cheetah_utils.get_state(env, env.env._get_obs())
             data = execute_one_rollout(policies, weights, env, obs, T, data, norm)
@@ -360,8 +361,8 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
 
         epoch = 'epoch_%02d' % (i) 
         if args.render:
-            sac.record(T=2000, n=1, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
-            sac.record(T=2000, n=1, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
+            sac.record(T=args.record_steps, n=1, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
+            sac.record(T=args.record_steps, n=1, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
         
         if args.autoencode:
             print("Learning autoencoding....")
@@ -376,7 +377,8 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
             execute_average_policy(env, policies, T, weights,
                                    reward_fn=reward_fn, norm=normalization_factors, 
                                    initial_state=initial_state, n=args.n, 
-                                   render=args.render, video_dir=video_dir+'/mixed/'+epoch, epoch=i)
+                                   render=args.render, render_steps=args.record_steps,
+                                   video_dir=video_dir+'/mixed/'+epoch, epoch=i)
         
         print("Calculating maxEnt entropy...")
         round_entropy = entropy(average_p.ravel())

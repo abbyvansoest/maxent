@@ -50,14 +50,14 @@ max_bin = 10
 num_bins = 15
 
 special = [0, 9]
-mins = [-12, -12]
-maxs = [12, 12]
-bins = [10, 10]
+mins = [-20, -5]
+maxs = [20, 5]
+bins = [20, 15]
 
 plot_2d = [0,9]
-min_bin_2d_0, min_bin_2d_1 = -10, -10
-max_bin_2d_0, max_bin_2d_1  = 10, 10
-num_bins_2d_0,num_bins_2d_1 = 15, 15
+min_bin_2d_0, min_bin_2d_1 = -50, -5
+max_bin_2d_0, max_bin_2d_1  = 50, 5
+num_bins_2d_0, num_bins_2d_1 = 20, 15
 
 # special = [2, 7]
 # mins = [0, -10]
@@ -264,4 +264,5 @@ def get_state(env, obs, wrapped=False):
         utils.log_statement(state)
         raise ValueError("state and observation are not equal")
 
+#     print(state[special])
     return state
