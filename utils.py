@@ -179,6 +179,11 @@ def get_weights(distributions):
     weights = np.absolute(weights) / weights.sum()
     print(weights)
     print(weights.sum())
+    
+    if not np.isclose(weights.sum(), 1):
+        weights = np.absolute(weights) / weights.sum()
+        print('re-normalizing: %f' % weights.sum())
+    
     return weights
 
         
