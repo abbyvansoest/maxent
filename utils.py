@@ -7,6 +7,8 @@ import copy
 import sys
 import os
 
+np.set_printoptions(precision=15)
+
 parser = argparse.ArgumentParser(description='Ant Entropy')
 
 # learning and Frank Wolfe args
@@ -180,8 +182,8 @@ def get_weights(distributions):
     print(weights)
     print(weights.sum())
     
-    if not np.isclose(weights.sum(), 1):
-        weights = np.absolute(weights) / weights.sum()
+    if not np.isclose(weights.sum(), 1, rtol=1e-8):
+        weights /= weights.sum()
         print('re-normalizing: %f' % weights.sum())
     
     return weights
