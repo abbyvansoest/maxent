@@ -30,14 +30,14 @@ max_bin = 10
 num_bins = 15
 
 special = [0, 6]
-mins = [-12, -12]
-maxs = [12, 12]
-bins = [10, 10]
+mins = [-15, -5]
+maxs = [15, 5]
+bins = [20, 10]
 
 plot_2d = [0,6]
-min_bin_2d_0, min_bin_2d_1 = -10, -10
-max_bin_2d_0, max_bin_2d_1  = 10, 10
-num_bins_2d_0,num_bins_2d_1 = 15, 15
+min_bin_2d_0, min_bin_2d_1 = -15, -5
+max_bin_2d_0, max_bin_2d_1  = 15, 5
+num_bins_2d_0,num_bins_2d_1 = 20, 15
 
 n_bins_autoencoder = 10
 

@@ -1,6 +1,6 @@
 # Collect entropy-based reward policies.
 
-# python hopper_collect_sac.py --env="Hopper-v2" --exp_name=test --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=16 --gaussian --reduce_dim=5
+# python hopper_collect_sac.py --env="Hopper-v2" --exp_name=test --T=10000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=16 --gaussian --reduce_dim=5
 
 # for discretizing with autoencoding
 # python hopper_collect_sac.py --env="Hopper-v2" --exp_name=_discretize_autoencoder_6 --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=30 --autoencode --autoencoder_reduce_dim=6

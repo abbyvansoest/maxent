@@ -1,6 +1,6 @@
 # Collect entropy-based reward policies.
 
-# python walker_collect_sac.py --env="Walker2d-v2" --exp_name=test --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=16 --gaussian --reduce_dim=5
+# python walker_collect_sac.py --env="Walker2d-v2" --exp_name=test --T=10000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=16 --gaussian --reduce_dim=5 --fully_corrective
 
 import sys
 import os

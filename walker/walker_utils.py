@@ -50,24 +50,14 @@ max_bin = 10
 num_bins = 15
 
 special = [0, 9]
-mins = [-20, -10]
-maxs = [20, 10]
+mins = [-20, -8]
+maxs = [20, 8]
 bins = [20, 15]
 
 plot_2d = [0,9]
-min_bin_2d_0, min_bin_2d_1 = -20, -10
-max_bin_2d_0, max_bin_2d_1  = 20, 10
-num_bins_2d_0, num_bins_2d_1 = 20, 20
-
-# special = [2, 7]
-# mins = [0, -10]
-# maxs = [2*np.pi, 10]
-# bins = [8, 10]
-
-# plot_2d = [2,7]
-# min_bin_2d_0, min_bin_2d_1 = 0, -20
-# max_bin_2d_0, max_bin_2d_1  = 2*np.pi, 20
-# num_bins_2d_0,num_bins_2d_1 = 20, 20 
+min_bin_2d_0, min_bin_2d_1 = -20, -8
+max_bin_2d_0, max_bin_2d_1  = 20, 8
+num_bins_2d_0, num_bins_2d_1 = 20, 10
 
 n_bins_autoencoder = 10
 
