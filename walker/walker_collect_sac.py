@@ -123,15 +123,23 @@ def select_action(policies, weights, env, obs):
     
     return action
 
-def execute_one_rollout(policies, weights, env, start_obs, T, data, norm, wrapped=False):
+def execute_one_rollout(policies, weights, env, start_obs, 
+    T, data, norm, wrapped=False, video_dir=''):
     obs = start_obs
     
     p, p_xy, cumulative_states_visited, states_visited, \
     cumulative_states_visited_xy, states_visited_xy, random_initial_state = data
     
     random_T = np.random.randint(0, T)
+
+    uid = 0
     
     for t in range(T):
+
+        if wrapped:
+            print(t)
+
+        uid = uid + 1
             
         action = select_action(policies, weights, env, obs)
         
@@ -156,8 +164,17 @@ def execute_one_rollout(policies, weights, env, start_obs, T, data, norm, wrappe
         if done: # CRITICAL: ignore done signal
             done = False
             if wrapped:
-                obs = env.reset()
-                obs = walker_utils.get_state(env, obs, wrapped)
+                print(t)
+                env.close()
+                base_env = gym.make('Walker2d-v2')
+                env = wrappers.Monitor(base_env, video_dir+'/%d' % uid)
+                env.reset()
+                uid = uid + 1
+                qpos = obs[:len(walker_utils.qpos)]
+                qvel = obs[len(walker_utils.qpos):]
+                env.unwrapped.set_state(qpos, qvel)
+                d = False
+
         
     data = (p, p_xy, cumulative_states_visited, states_visited, \
     cumulative_states_visited_xy, states_visited_xy, random_initial_state)
@@ -202,7 +219,8 @@ def execute_average_policy(env, policies, T, weights,
             qvel = initial_state[len(walker_utils.qpos):]
             wrapped_env.unwrapped.set_state(qpos, qvel)
             obs = walker_utils.get_state(wrapped_env, wrapped_env.unwrapped._get_obs(), wrapped=True)
-            data = execute_one_rollout(policies, weights, wrapped_env, obs, T=render_steps, data=data, norm=norm, wrapped=True)
+            data = execute_one_rollout(policies, weights, wrapped_env, obs, 
+                T=render_steps, data=data, norm=norm, wrapped=True, video_dir=video_dir)
         else:
             obs = walker_utils.get_state(env, env.env._get_obs())
             data = execute_one_rollout(policies, weights, env, obs, T, data, norm)

@@ -262,6 +262,8 @@ class WalkerSoftActorCritic:
         print("rendering env in record()")
         
         # TODO: set width and height.
+
+        uid = 0
         
         for i in range(n):
             self.test_env.reset()
@@ -270,6 +272,8 @@ class WalkerSoftActorCritic:
 
             t = 0
             d = False
+            uid = uid + 1
+
             while t < T and not d:
                 o = wrapped_env.unwrapped.state_vector()
                 if on_policy:
@@ -282,6 +286,18 @@ class WalkerSoftActorCritic:
                 if np.all(np.isclose(o, wrapped_env.unwrapped.state_vector())):
                     print('close!')
                     break
+
+                if d:
+                    print(t)
+                    wrapped_env.close()
+                    wrapped_env = wrappers.Monitor(self.test_env, video_dir + '/%d'%(uid))
+                    uid = uid + 1
+                    wrapped_env.reset()
+                    qpos = o[:len(walker_utils.qpos)]
+                    qvel = o[len(walker_utils.qpos):]
+                    wrapped_env.unwrapped.set_state(qpos, qvel)
+                    d = False
+
                     
                 wrapped_env.unwrapped.render(mode='rgb_array', width=1000, height=1000)
                 
