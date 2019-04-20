@@ -24,7 +24,7 @@ parser.add_argument('--epochs', type=int, default=16, metavar='epo',
                     help='number of models to train on entropy rewards')
 parser.add_argument('--T', type=int, default=10000, metavar='T',
                     help='number of steps to roll out entropy policy')
-parser.add_argument('--T_small', type=int, default=10000, metavar='T',
+parser.add_argument('--T_small', type=int, default=1000, metavar='T',
                     help='small number of steps to roll out entropy policy')
 parser.add_argument('--n', type=int, default=20, metavar='n',
                     help='number of rollouts to average over')
