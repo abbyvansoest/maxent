@@ -286,6 +286,8 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         round_entropy_baseline_xy_small = (round_entropy_baseline_xy_small * (i)/float(i+1) +
                                            entropy(p_baseline_xy_small.ravel())/float(i+1))
         
+        utils.log_statement(average_p_xy)
+        
         # TODO: collect a lot of data from the current mixed policy
         # use this data to learn a new distribution in reward_fn object
         # then, the reward_fn object will use the new distribution to 
