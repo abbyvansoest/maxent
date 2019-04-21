@@ -6,5 +6,6 @@
 *classic_control_copy
 gym_patch
 *videos/
+*data/
 .ipynb_checkpoints/
 test.sh
