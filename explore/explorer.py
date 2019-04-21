@@ -83,6 +83,8 @@ class Explorer:
             cur_dir = expert_dir+model_dir
             print('-----------------')
             print(cur_dir)
+            if not os.path.isdir(cur_dir):
+                continue
             if 'simple_save' not in os.listdir(cur_dir):
                 self.get_actions.append('null get_action op')
                 continue

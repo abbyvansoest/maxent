@@ -71,6 +71,8 @@ def execute_one_rollout(policies, weights, env, obs, T, data, video_dir='', wrap
         
         if t == random_T:
             random_initial_state = obs
+        if wrapped:
+            print(t)
 
         if done: # CRITICAL: ignore done signal
             done = False

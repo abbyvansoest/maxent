@@ -245,6 +245,7 @@ class HumanoidSoftActorCritic:
             t = 0
             d = False
             while t < T and not d:
+                print(t)
                 o = wrapped_env.unwrapped.state_vector()
                 if on_policy:
                     a = self.get_action(o, deterministic)
@@ -253,7 +254,6 @@ class HumanoidSoftActorCritic:
                 o, r, d, _ = wrapped_env.step(a)
                 o = wrapped_env.unwrapped.state_vector()
                 if d:
-                    print(t)
                     wrapped_env.close()
                     wrapped_env = wrappers.Monitor(self.test_env, video_dir + '/%d'%(uid))
                     uid = uid + 1
