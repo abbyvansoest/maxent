@@ -1,6 +1,6 @@
 # Collect entropy-based reward policies.
 
-# python ant_collect_sac.py --env="Ant-v2" --exp_name=test --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=16 --gaussian --reduce_dim=5
+# python ant_collect_sac.py --env="Ant-v2" --exp_name=test --T=10000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=16 --gaussian --reduce_dim=5
 
 # for discretizing with autoencoding
 # python ant_collect_sac.py --env="Ant-v2" --exp_name=_discretize_autoencoder_6 --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=30 --autoencode --autoencoder_reduce_dim=6
@@ -181,7 +181,7 @@ def execute_one_rollout(policies, weights, env, start_obs, T, data, norm, wrappe
 # run a simulation to see how the average policy behaves.
 def execute_average_policy(env, policies, T, weights,
                            reward_fn=[], norm=[], initial_state=[], 
-                           n=10, render=False, video_dir='', epoch=0):
+                           n=10, render=False, video_dir='', epoch=0, record_steps=1000):
     
     p = np.zeros(shape=(tuple(ant_utils.num_states)))
     p_xy = np.zeros(shape=(tuple(ant_utils.num_states_2d)))
@@ -215,7 +215,8 @@ def execute_average_policy(env, policies, T, weights,
             qvel = initial_state[len(ant_utils.qpos):]
             wrapped_env.unwrapped.set_state(qpos, qvel)
             obs = get_state(wrapped_env, wrapped_env.unwrapped._get_obs(), wrapped=True)
-            data = execute_one_rollout(policies, weights, wrapped_env, obs, T=2000, data=data, norm=norm, wrapped=True)
+            data = execute_one_rollout(policies, weights, wrapped_env, 
+                                       obs, T=record_steps, data=data, norm=norm, wrapped=True)
         else:
             obs = get_state(env, env.env._get_obs())
             data = execute_one_rollout(policies, weights, env, obs, T, data, norm)
@@ -366,8 +367,9 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
 
         epoch = 'epoch_%02d' % (i) 
         if args.render:
-            sac.record(T=2000, n=1, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
-            sac.record(T=2000, n=1, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
+            if i < 10:
+                sac.record(T=args.record_steps, n=1, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
+            sac.record(T=args.record_steps, n=1, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
         
         if args.autoencode:
             print("Learning autoencoding....")
@@ -382,7 +384,8 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
             execute_average_policy(env, policies, T, weights,
                                    reward_fn=reward_fn, norm=normalization_factors, 
                                    initial_state=initial_state, n=args.n, 
-                                   render=args.render, video_dir=video_dir+'/mixed/'+epoch, epoch=i)
+                                   render=args.render, video_dir=video_dir+'/mixed/'+epoch, epoch=i,
+                                   record_steps=args.record_steps)
         
         print("Calculating maxEnt entropy...")
         round_entropy = entropy(average_p.ravel())

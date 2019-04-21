@@ -36,7 +36,8 @@ def plot_data(data, xaxis='Epoch', value="AverageEpRet", condition="Condition1",
     if isinstance(data, list):
         data = pd.concat(data, ignore_index=True)
     sns.set(style="darkgrid", font_scale=1.5)
-    sns.tsplot(data=data, time=xaxis, value=value, unit="Unit", condition=condition, ci='sd', **kwargs)
+    sns.tsplot(data=data, time=xaxis, value=value, unit="Unit", 
+               condition=condition, ci='sd', color=sns.color_palette('Set2'), **kwargs)
     """
     If you upgrade to any version of Seaborn greater than 0.8.1, switch from 
     tsplot to lineplot replacing L29 with:
@@ -171,7 +172,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('logdir', nargs='*')
     parser.add_argument('--legend', '-l', nargs='*')
-    parser.add_argument('--xaxis', '-x', default='TotalEnvInteracts')
+    parser.add_argument('--xaxis', '-x', default='Epoch')
     parser.add_argument('--value', '-y', default='Performance', nargs='*')
     parser.add_argument('--count', action='store_true')
     parser.add_argument('--smooth', '-s', type=int, default=1)
@@ -235,3 +236,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+    
+    
+# python plot.py explore/data/vpg/HalfCheetah-v2/epsgreedy_uniform_decay99/epsgreedy_base explore/data/vpg/HalfCheetah-v2/epsgreedy_uniform_decay99/epsgreedy_eps000 explore/data/vpg/HalfCheetah-v2/epsgreedy_uniform_decay99/epsgreedy_eps001 explore/data/vpg/HalfCheetah-v2/epsgreedy_uniform_decay99/epsgreedy_eps002 explore/data/vpg/HalfCheetah-v2/epsgreedy_uniform_decay99/epsgreedy_eps005 explore/data/vpg/HalfCheetah-v2/epsgreedy_uniform_decay99/epsgreedy_eps010 --x Epoch --smooth 10 --legend '$\epsilon = 0$' '$\epsilon = 0.0005$' '$\epsilon = 0.0010$' '$\epsilon = 0.0025$' '$\epsilon = 0.005$' '$\epsilon = 0.010$'
+
+# python plot.py explore/data/vpg/HalfCheetah-v2/epsgreedy_uniform/epsgreedy_base explore/data/vpg/HalfCheetah-v2/epsgreedy_uniform/epsgreedy_eps005 explore/data/vpg/HalfCheetah-v2/epsgreedy_uniform/epsgreedy_eps010  --x Epoch --smooth 10 --legend '$\epsilon = 0$' '$\epsilon = 0.005$' '$\epsilon = 0.010$' 
