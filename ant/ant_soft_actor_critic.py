@@ -1,3 +1,4 @@
+# Soft-Actor Critic ApproxPlan oracle for Ant environment.
 # Code derived from: https://spinningup.openai.com/en/latest/algorithms/sac.html
 
 import sys

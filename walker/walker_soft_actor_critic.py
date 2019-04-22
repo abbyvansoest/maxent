@@ -1,5 +1,5 @@
+# Soft-Actor Critic ApproxPlan oracle for Walker2d environment.
 # Code derived from: https://spinningup.openai.com/en/latest/algorithms/sac.html
-
 import sys
 import os
 sys.path.append(os.getenv("HOME")+'/maxent')
