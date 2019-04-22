@@ -2,9 +2,6 @@
 
 # python swimmer_collect_sac.py --env="Swimmer-v2" --exp_name=test --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=16 --gaussian --reduce_dim=5
 
-# for discretizing with autoencoding
-# python swimmer_collect_sac.py --env="Swimmer-v2" --exp_name=_discretize_autoencoder_6 --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=30 --autoencode --autoencoder_reduce_dim=6
-
 import sys
 import os
 sys.path.append(os.getenv("HOME") + '/maxent')
@@ -30,37 +27,6 @@ from experience_buffer import ExperienceBuffer
 args = utils.get_args()
 
 from spinup.utils.run_utils import setup_logger_kwargs
-
-# collect data to be learned by autoencoder
-def collect_avg_obs(env, policies, T, n=100):
-    data = []
-    max_idx = len(policies) - 1
-    
-    utils.log_statement('Collecting ' + str(n*T) + ' steps')
-    
-    for iteration in range(n):        
-        env.reset()
-        obs = swimmer_utils.get_state(env, env.env._get_obs())
-       
-        for t in range(T):
-            action = np.zeros(shape=(1,swimmer_utils.action_dim))
-            
-            # select random policy uniform distribution
-            # take non-deterministic action for that policy
-            idx = random.randint(0, max_idx)
-            if idx == 0:
-                action = env.action_space.sample()
-            else:
-                action = policies[idx].get_action(obs, deterministic=args.deterministic)
-                
-            # Count the cumulative number of new states visited as a function of t.
-            obs, _, done, _ = env.step(action)
-            data.append(obs[:29])
-            obs = swimmer_utils.get_state(env, obs)
-        
-        print('Iteration %i/%i' % (iteration, n))
-    
-    return data
 
 def compute_states_visited_xy(env, policies, T, n, norm=[],
                               N=20, initial_state=[], baseline=False):
@@ -298,8 +264,8 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     running_avg_ps_baseline_xy = []
     avg_ps_baseline_xy = []
     
-    running_avg_cheat_entropies = []
-    running_avg_cheat_entropies_baseline = []
+    running_avg_cumul_entropies = []
+    running_avg_cumul_entropies_baseline = []
 
     policies = []
     distributions = []
@@ -363,12 +329,6 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
             sac.record(T=2000, n=1, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
             sac.record(T=2000, n=1, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
         
-        if args.autoencode:
-            print("Learning autoencoding....")
-            train = collect_avg_obs(env, policies, T=1000, n=1000)
-            test = collect_avg_obs(env, policies, T=1000, n=200)
-            swimmer_utils.learn_encoding(train, test)
-
         # Execute the cumulative average policy thus far.
         # Estimate distribution and entropy.
         print("Executing mixed policy...")
@@ -449,8 +409,8 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         p_baseline = None
         
         # (save for plotting)
-        running_avg_cheat_entropies.append(entropy_of_running_avg_p)
-        running_avg_cheat_entropies_baseline.append(entropy_of_running_avg_p_baseline)
+        running_avg_cumul_entropies.append(entropy_of_running_avg_p)
+        running_avg_cumul_entropies_baseline.append(entropy_of_running_avg_p_baseline)
         
         running_avg_entropies_baseline.append(running_avg_ent_baseline)
         running_avg_entropies_baseline_xy.append(running_avg_ent_baseline_xy)
@@ -505,7 +465,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     # cumulative plots.
     plotting.running_average_entropy(running_avg_entropies, running_avg_entropies_baseline)
     plotting.running_average_entropy(running_avg_entropies_xy, running_avg_entropies_baseline_xy, ext='_xy')
-    plotting.running_average_entropy(running_avg_cheat_entropies, running_avg_cheat_entropies_baseline, ext='_cumulative_xy') 
+    plotting.running_average_entropy(running_avg_cumul_entropies, running_avg_cumul_entropies_baseline, ext='_cumulative_xy') 
     
     plotting.heatmap4(running_avg_ps_xy, running_avg_ps_baseline_xy, indexes, ext="cumulative")
     plotting.heatmap4(avg_ps_xy, avg_ps_baseline_xy, indexes, ext="epoch")
