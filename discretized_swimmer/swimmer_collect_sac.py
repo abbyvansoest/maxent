@@ -1,7 +1,5 @@
 # Collect entropy-based reward policies.
 
-# python swimmer_collect_sac.py --env="Swimmer-v2" --exp_name=test --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=16 --gaussian --reduce_dim=5
-
 import sys
 import os
 sys.path.append(os.getenv("HOME") + '/maxent')

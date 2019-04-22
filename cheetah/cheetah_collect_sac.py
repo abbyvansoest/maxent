@@ -1,7 +1,5 @@
 # Collect entropy-based reward policies.
 
-# python cheetah_collect_sac.py --env="HalfCheetah-v2" --exp_name=test --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=16 --gaussian --reduce_dim=5
-
 import sys
 import os
 sys.path.append(os.getenv("HOME") + '/maxent')
@@ -18,6 +16,7 @@ import gym
 from gym import wrappers
 import tensorflow as tf
 
+# local imports
 import utils
 import cheetah_utils
 import plotting

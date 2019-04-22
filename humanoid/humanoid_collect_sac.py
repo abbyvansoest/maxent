@@ -19,6 +19,7 @@ import gym
 from gym import wrappers
 import tensorflow as tf
 
+# local imports
 import utils
 import plotting
 import humanoid_utils
