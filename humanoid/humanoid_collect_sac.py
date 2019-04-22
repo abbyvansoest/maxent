@@ -1,7 +1,5 @@
 # Collect entropy-based reward policies.
 
-# python humanoid_collect_sac.py --env="Humanoid-v2" --exp_name=replicate --T=100000 --n=20 --l=2 --hid=300 --epochs=30 --episodes=30 --fully_corrective
-
 import sys
 import os
 sys.path.append(os.getenv("HOME") + '/maxent')
