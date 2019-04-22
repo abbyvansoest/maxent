@@ -265,8 +265,8 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     running_avg_ps_baseline_xy = []
     avg_ps_baseline_xy = []
     
-    running_avg_cheat_entropies = []
-    running_avg_cheat_entropies_baseline = []
+    running_avg_cumul_entropies = []
+    running_avg_cumul_entropies_baseline = []
 
     policies = []
     distributions = []
@@ -411,8 +411,8 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
         p_baseline = None
         
         # (save for plotting)
-        running_avg_cheat_entropies.append(entropy_of_running_avg_p)
-        running_avg_cheat_entropies_baseline.append(entropy_of_running_avg_p_baseline)
+        running_avg_cumul_entropies.append(entropy_of_running_avg_p)
+        running_avg_cumul_entropies_baseline.append(entropy_of_running_avg_p_baseline)
         
         running_avg_entropies_baseline.append(running_avg_ent_baseline)
         running_avg_entropies_baseline_xy.append(running_avg_ent_baseline_xy)
@@ -467,7 +467,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     # cumulative plots.
     plotting.running_average_entropy(running_avg_entropies, running_avg_entropies_baseline)
     plotting.running_average_entropy(running_avg_entropies_xy, running_avg_entropies_baseline_xy, ext='_xy')
-    plotting.running_average_entropy(running_avg_cheat_entropies, running_avg_cheat_entropies_baseline, ext='_cumulative_xy') 
+    plotting.running_average_entropy(running_avg_cumul_entropies, running_avg_cumul_entropies_baseline, ext='_cumulative_xy') 
     
     plotting.heatmap4(running_avg_ps_xy, running_avg_ps_baseline_xy, indexes, ext="cumulative")
     plotting.heatmap4(avg_ps_xy, avg_ps_baseline_xy, indexes, ext="epoch")
@@ -475,7 +475,6 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     plotting.percent_state_space_reached(pct_visited, pct_visited_baseline, ext='_total')
     plotting.percent_state_space_reached(pct_visited_xy, pct_visited_xy_baseline, ext="_xy")
     
-    # TODO: get final weights for the policies. SAve in a pickle file in experiment_directory
     return policies
 
 def main():

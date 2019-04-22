@@ -473,7 +473,6 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     plotting.percent_state_space_reached(pct_visited, pct_visited_baseline, ext='_total')
     plotting.percent_state_space_reached(pct_visited_xy, pct_visited_xy_baseline, ext="_xy")
     
-    # TODO: get final weights for the policies. SAve in a pickle file in experiment_directory
     return policies
 
 def main():
