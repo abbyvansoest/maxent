@@ -1,7 +1,5 @@
 # Collect entropy-based reward policies.
 
-# python humanoid_collect_sac.py --env="Humanoid-v2" --exp_name=replicate --T=100000 --n=20 --l=2 --hid=300 --epochs=30 --episodes=30 --fully_corrective
-
 import sys
 import os
 sys.path.append(os.getenv("HOME") + '/maxent')
@@ -21,6 +19,7 @@ import gym
 from gym import wrappers
 import tensorflow as tf
 
+# local imports
 import utils
 import plotting
 import humanoid_utils
@@ -179,13 +178,13 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     round_entropy_baseline_xy_small = 0.
     
     running_avg_entropies_xy = []
-    running_avg_cheat_entropies = []
+    running_avg_cumul_entropies = []
     running_avg_entropies_small = []
     running_avg_ps_xy = []
     avg_ps_xy = []
 
     running_avg_entropies_baseline_xy = []
-    running_avg_cheat_entropies_baseline = []
+    running_avg_cumul_entropies_baseline = []
     running_avg_entropies_small_baseline = []
     running_avg_ps_baseline_xy = []
     avg_ps_baseline_xy = []
@@ -310,8 +309,8 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
             avg_ps_baseline_xy.append(np.copy(p_baseline_xy))
            
         # (save for plotting)
-        running_avg_cheat_entropies.append(entropy_of_running_avg_p)
-        running_avg_cheat_entropies_baseline.append(entropy_of_running_avg_p_baseline)
+        running_avg_cumul_entropies.append(entropy_of_running_avg_p)
+        running_avg_cumul_entropies_baseline.append(entropy_of_running_avg_p_baseline)
         running_avg_entropies_small.append(round_entropy_xy_small)
         running_avg_entropies_small_baseline.append(round_entropy_baseline_xy_small)
     
@@ -347,7 +346,7 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
     #   cumulative plots.
     plotting.running_average_entropy(running_avg_entropies_xy, running_avg_entropies_baseline_xy, ext='_xy')
     plotting.running_average_entropy(
-        running_avg_cheat_entropies, running_avg_cheat_entropies_baseline, ext='_cumulative_xy') 
+        running_avg_cumul_entropies, running_avg_cumul_entropies_baseline, ext='_cumulative_xy') 
     plotting.running_average_entropy(running_avg_entropies_small, running_avg_entropies_small_baseline, ext='_small_T') 
     
     plotting.heatmap4(running_avg_ps_xy, running_avg_ps_baseline_xy, indexes, ext="cumulative")

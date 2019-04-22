@@ -24,7 +24,6 @@
 import gym
 import time
 import numpy as np
-from autoencoder.custom import CustomAutoencoder
 
 import utils
 args = utils.get_args()
@@ -63,7 +62,6 @@ min_bin_2d = -20
 max_bin_2d = 20
 num_bins_2d = 20
 
-n_bins_autoencoder = 10
 
 reduce_dim = args.reduce_dim
 expected_state_dim = len(special) + reduce_dim
@@ -76,25 +74,7 @@ print("total_state_space = %d" % total_state_space)
 print("expected_state_dim = %d" % expected_state_dim)
 print("action_dim = %d" % action_dim)
 
-autoencoders = []
 norm_factors = []
-
-# TODO: is any of this being set globally?????
-def learn_encoding(train, test):
-    print("Custom....")
-    if not args.reuse_net:
-        autoencoder = CustomAutoencoder(num_input=29, 
-                                num_hid1=24, num_hid2=16,
-                                reduce_dim=args.autoencoder_reduce_dim, 
-                                printfn=utils.log_statement)
-    autoencoder.set_data(train)
-    autoencoder.set_test_data(test)
-    autoencoder.train()
-    
-    # set normalization factors
-    norm_factors.append(autoencoder.test(iterations=5000))
-    
-    autoencoders.append(autoencoder)
 
 def convert_obs(observation):
     new_obs = []
@@ -132,21 +112,10 @@ def get_state_bins_reduced():
         state_bins.append(discretize_range(min_bin, max_bin, num_bins))
     return state_bins
 
-def get_state_bins_autoencoder():
-    state_bins = []
-    for i in range(args.autoencoder_reduce_dim):
-        state_bins.append(discretize_range(-1, 1, n_bins_autoencoder)) 
-    return state_bins
-
 def get_state_bins_2d_state():
     state_bins = []
     for i in range(start, stop):
         state_bins.append(discretize_range(min_bin_2d, max_bin_2d, num_bins_2d))
-        
-    if args.autoencode:
-        state_bins = []
-        for i in range(start, stop):
-            state_bins.append(discretize_range(-1, 1, num_bins_2d))
     
     return state_bins
 
@@ -159,8 +128,6 @@ def get_num_states(state_bins):
 state_bins = []
 if args.gaussian:
     state_bins = get_state_bins_reduced()
-elif args.autoencode:
-    state_bins = get_state_bins_autoencoder()
 else:
     state_bins = get_state_bins()
 num_states = get_num_states(state_bins)
@@ -170,13 +137,6 @@ num_states_2d = tuple([num_bins_2d for i in range(start, stop)])
 
 # Discretize the observation features and reduce them to a single list.
 def discretize_state_2d(obs, norm=[], env=None):
-    
-    # DO THIS if you want to examine the distribution over the 
-    # autoencoded dimensions. Otherwise, it'll examine xy still
-    if args.autoencode2d and env is not None:
-        obs = env.env._get_obs()[:29]
-        obs = autoencoders[-1].encode(obs).flatten()
-        obs = np.divide(obs, norm_factors[-1])
     
     state = []
     for i in range(start, stop):
@@ -206,31 +166,9 @@ def discretize_state_reduced(observation, norm=[]):
     return state
 
 # Discretize the observation features and reduce them to a single list.
-def discretize_state_autoencoder(env):
-    
-    obs = env.env._get_obs()[:29]
-    obs = autoencoders[-1].encode(obs).flatten()
-    obs = np.divide(obs, norm_factors[-1])
-
-    # log encoded data to file.
-    encodedfile = 'logs/encoded/' + args.exp_name + '.txt'
-    with open(encodedfile, 'a') as f:
-        f.write(str(obs) + '\n')
-        
-    # todo: discretize from here....
-    state = []
-    for i, feature in enumerate(obs):
-        state.append(discretize_value(feature, state_bins[i]))
-#     print(obs)
-#     print(state)
-    return state
-
-# Discretize the observation features and reduce them to a single list.
 def discretize_state(observation, norm=[], env=None):
     if args.gaussian:
         state = discretize_state_reduced(observation, norm)
-    elif args.autoencode:
-        state = discretize_state_autoencoder(env)
     else:
         state = discretize_state_normal(observation)
 

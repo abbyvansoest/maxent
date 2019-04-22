@@ -1,4 +1,4 @@
-# Code derived from: https://spinningup.openai.com/en/latest/algorithms/sac.html
+# Soft-Actor Critic approximate planning oracle for the Cheetah environment.
 
 import sys
 import os
