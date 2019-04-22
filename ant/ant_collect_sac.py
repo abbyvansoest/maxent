@@ -26,37 +26,6 @@ args = utils.get_args()
 
 from spinup.utils.run_utils import setup_logger_kwargs
 
-# Collect data to be learned by autoencoder
-def collect_avg_obs(env, policies, T, n=100):
-    data = []
-    max_idx = len(policies) - 1
-    
-    utils.log_statement('Collecting ' + str(n*T) + ' steps')
-    
-    for iteration in range(n):        
-        env.reset()
-        obs = get_state(env, env.env._get_obs())
-       
-        for t in range(T):
-            action = np.zeros(shape=(1,ant_utils.action_dim))
-            
-            # select random policy uniform distribution
-            # take non-deterministic action for that policy
-            idx = random.randint(0, max_idx)
-            if idx == 0:
-                action = env.action_space.sample()
-            else:
-                action = policies[idx].get_action(obs, deterministic=args.deterministic)
-                
-            # Count the cumulative number of new states visited as a function of t.
-            obs, _, done, _ = env.step(action)
-            data.append(obs[:29])
-            obs = get_state(env, obs)
-        
-        print('Iteration %i/%i' % (iteration, n))
-    
-    return data
-
 def get_state(env, obs, wrapped=False):
     if wrapped:
         state = env.unwrapped.state_vector()
@@ -365,12 +334,6 @@ def collect_entropy_policies(env, epochs, T, MODEL_DIR=''):
             if i < 10:
                 sac.record(T=args.record_steps, n=1, video_dir=video_dir+'/baseline/'+epoch, on_policy=False) 
             sac.record(T=args.record_steps, n=1, video_dir=video_dir+'/entropy/'+epoch, on_policy=True) 
-        
-        if args.autoencode:
-            print("Learning autoencoding....")
-            train = collect_avg_obs(env, policies, T=1000, n=1000)
-            test = collect_avg_obs(env, policies, T=1000, n=200)
-            ant_utils.learn_encoding(train, test)
 
         # Execute the cumulative average policy thus far.
         # Estimate distribution and entropy.

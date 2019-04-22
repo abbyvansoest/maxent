@@ -9,7 +9,7 @@ Note that this code is memory-intensive. It is set up to run on a specialized de
 Dependencies: Tensoflow, OpenAI Gym/Mujoco license, matplotlib, numpy, OpenAI SpinningUp, scipy
 
 Commands to recreate:
-python ant_collect_sac.py --env="Ant-v2" --exp_name=test --T=10000 --n=20 --l=2 --hid=300 --epochs=20 --episodes=30 --gaussian --reduce_dim=5 --geometric --avg_N=10
+python ant_collect_sac.py --env="Ant-v2" --exp_name=test --T=10000 --n=20 --l=2 --hid=300 --epochs=20 --episodes=30 --gaussian --reduce_dim=5 --geometric
 
 Example plotting command:
 
