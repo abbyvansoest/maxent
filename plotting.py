@@ -1,3 +1,5 @@
+# Plotting module to create running average entropy charts and epoch heatmaps.
+
 import os
 
 import numpy as np
@@ -209,29 +211,4 @@ def states_visited_over_time_multi(states_visited, states_visited_baseline, epoc
     fname = FIG_DIR + model_time + "cumulative_visited.png" 
     plt.savefig(fname)
     plt.close()
-
-# WORKING HERE
-def discretized_histograms(discretized, epoch):
     
-    n_bins = 12
-    
-    # discretized is a list of discretized observations    
-    discretized = np.array(discretized)
-    fig = plt.figure()
-    
-    dims = discretized.shape[1]
-    cols = 2
-    rows = int(dims/cols)
-    fig, axs = plt.subplots(rows, cols, sharey=True, tight_layout=True)
-    
-    for i, ax in enumerate(axs.reshape(-1)):
-        x = discretized[:,i]
-        ax.hist(x, bins=n_bins)
-        ax.set_label("DOF %d" % (i))
-    
-    states_dir = FIG_DIR + model_time + 'histograms/'
-    if not os.path.exists(states_dir):
-        os.makedirs(states_dir)
-        
-    fname = states_dir + "epoch_%02d.png" % (epoch) 
-    plt.savefig(fname)

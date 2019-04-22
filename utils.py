@@ -1,3 +1,8 @@
+# This is the utility file for all experiments. 
+# It contains:
+# 1) definition of all command line arguments
+# 2) functions for determining policy weights
+
 import cvxpy as cvx
 import numpy as np
 import scipy.stats
@@ -108,6 +113,7 @@ def log_statement(s):
     with open(logfile, 'a') as f:
         f.write(str(s)+'\n')
 
+# Project the vector y onto the unit simplex.
 def proj_unit_simplex(y):
     '''
     Returns the point in the simplex a^Tx = 1, x&amp;amp;amp;amp;gt;=0 that is
@@ -124,6 +130,7 @@ def proj_unit_simplex(y):
  
     return np.array(x.value)
 
+# Perform gradient descent to obtain fully-corrective weights.
 def fully_corrective_weights(distributions, eps=1e-3, step=.2):
     N = len(distributions)    
     
@@ -166,12 +173,14 @@ def fully_corrective_weights(distributions, eps=1e-3, step=.2):
         
     return weights
 
-def geometric_weights(distributions):
+# Get (unit-normalized) geometric weights.
+def geometric_weights(distributions, gamma=0.90):
     N = len(distributions)
-    weights = [.90**(N-i) for i in range(N)]
+    weights = [gamma**(N-i) for i in range(N)]
     weights = proj_unit_simplex(weights)
     return weights
 
+# Return the proper weighting for the distributions based on command line arguments.
 def get_weights(distributions):
     weights = np.ones(len(distributions))/float(len(distributions)) 
     if args.fully_corrective:

@@ -9,8 +9,8 @@ Note that this code is memory-intensive. It is set up to run on a specialized de
 Dependencies: Tensoflow, OpenAI Gym/Mujoco license, matplotlib, numpy, OpenAI SpinningUp, scipy
 
 Commands to recreate:
-python ant_collect_sac.py --env="Ant-v2" --T=10000 --epochs=26 --episodes=30 --gaussian --exp_name=ant_experiment --reduce_dim=5 --n=10 --l=2 --avg_N=10
+python ant_collect_sac.py --env="Ant-v2" --exp_name=test --T=10000 --n=20 --l=2 --hid=300 --epochs=20 --episodes=30 --gaussian --reduce_dim=5 --geometric --avg_N=10
 
 Example plotting command:
 
-python -m spinup.run plot data/testing_save/model1/ data/testing_save/model2/ --xaxis Epoch --value AverageEpRet
+python -m spinup.run plot data/test/model1/ data/test/model2/ --xaxis Epoch --value AverageEpRet

@@ -1,10 +1,5 @@
 # Collect entropy-based reward policies.
 
-# python ant_collect_sac.py --env="Ant-v2" --exp_name=test --T=10000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=16 --gaussian --reduce_dim=5
-
-# for discretizing with autoencoding
-# python ant_collect_sac.py --env="Ant-v2" --exp_name=_discretize_autoencoder_6 --T=1000 --n=20 --l=2 --hid=300 --epochs=16 --episodes=30 --autoencode --autoencoder_reduce_dim=6
-
 import sys
 import os
 sys.path.append(os.getenv("HOME") + '/maxent')
@@ -31,7 +26,7 @@ args = utils.get_args()
 
 from spinup.utils.run_utils import setup_logger_kwargs
 
-# collect data to be learned by autoencoder
+# Collect data to be learned by autoencoder
 def collect_avg_obs(env, policies, T, n=100):
     data = []
     max_idx = len(policies) - 1

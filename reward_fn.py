@@ -1,3 +1,7 @@
+# The RewardFn object determines the reward the ApproxPlan implementation awards
+# to a given state if the MaxEnt implmentation uses a density estimation kernel. 
+# (i.e currently only Humanoid)
+
 import numpy as np
 
 from sklearn.datasets import load_digits
